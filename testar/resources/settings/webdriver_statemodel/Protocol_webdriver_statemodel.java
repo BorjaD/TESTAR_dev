@@ -63,17 +63,22 @@ public class Protocol_webdriver_statemodel extends WebdriverProtocol {
 			"mat-button-ripple", "flag-icon", "mat-menu-ripple", "mat-icon", "mat-tab-label-content", //OK
 			//Menu page
 			"mat-checkbox-label",
+			"mat-select-arrow",
+			"mat-expansion-panel-header-title",
+			"order",
 			//Sort by and options
 			"mat-select-placeholder", "mat-option-ripple",
 			//Calendar
-			"owl-dt-calendar-cell-content" 
+			"owl-dt-calendar-cell-content",
+			// Reservation cells
+			"mat-cell"
 			);
 	
 	private static List<String> alwaysClickableClasses = Arrays.asList("owl-dt-control-button-content");
 
 	private static List<String> typeableClasses = Arrays.asList(
 			//Text input of Menu page
-			"mat-input-element",//bookTable Page and Sign UP not detecting Email
+			"mat-form-field-label-wrapper", //bookTable Page, Sign UP and Email
 			"owl-dt-timer-input" //Calendar dates
 			);
 	
@@ -89,7 +94,9 @@ public class Protocol_webdriver_statemodel extends WebdriverProtocol {
 	// Define a whitelist of allowed domains for links and pages
 	// An empty list will be filled with the domain from the sut connector
 	// Set to null to ignore this feature
-	private static List<String> domainsAllowed = Arrays.asList("10.101.0.222:8081");
+	
+	//private static List<String> domainsAllowed = Arrays.asList("10.101.0.234:8081");
+	private static List<String> domainsAllowed = null;
 	//At the moment running MyThaiStar with ip domain (configure)
 
 	// If true, follow links opened in new tabs
@@ -167,9 +174,9 @@ public class Protocol_webdriver_statemodel extends WebdriverProtocol {
 		// such as clicks, drag&drop, typing ...
 		StdActionCompiler ac = new AnnotatingActionCompiler();
 		
-		loginMyThaiStarAction("user", "password", actions, state, ac);
+		loginMyThaiStarAction("waiter", "waiter", actions, state, ac);
 		
-		registerMyThaiStarAction("email", "password", actions, state, ac);
+		registerMyThaiStarAction("email@email.com", "password", actions, state, ac);
 
 		// Check if forced actions are needed to stay within allowed domains
 		Set<Action> forcedActions = detectForcedActions(state, ac);
@@ -490,16 +497,6 @@ public class Protocol_webdriver_statemodel extends WebdriverProtocol {
 		clickSet.retainAll(element.cssClasses);
 		if(clickSet.size() > 0)
 			return true;
-		
-		Role role = widget.get(Tags.Role, Roles.Widget);
-		if (Role.isOneOf(role, NativeLinker.getNativeTypeableRoles())) {
-			// Input type are special...
-			if (role.equals(WdRoles.WdINPUT)) {
-				String type = ((WdWidget) widget).element.type;
-				return WdRoles.typeableInputTypes().contains(type);
-			}
-			return true;
-		}
 
 		return false;
 	}

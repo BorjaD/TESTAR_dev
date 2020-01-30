@@ -27,7 +27,7 @@ Mode = Spy
 # Example format for the dimensions and position : 1920x1000+1680+0
 #################################################################
 SUTConnector = WEB_DRIVER
-SUTConnectorValue = "C:\\webdrivers\\chromedriver.exe" "1920x900+0+0" "http://10.101.0.222:8081"
+SUTConnectorValue = "C:\\webdrivers\\chromedriver.exe" "1920x900+0+0" "http://10.101.0.234:8081"
 
 #################################################################
 # Sequences
@@ -91,6 +91,8 @@ DataStoreDB = webdriver_mythaistar
 DataStoreUser = testar
 DataStorePassword = testar
 DataStoreMode = instant
+StateModelStoreWidgets = false
+ActionSelectionAlgorithm = unvisited
 
 #################################################################
 # State identifier attributes
@@ -98,7 +100,7 @@ DataStoreMode = instant
 # Specify the widget attributes that you wish to use in constructing
 # the widget and state hash strings. Use a comma separated list.
 #################################################################
-AbstractStateAttributes = WidgetControlType
+AbstractStateAttributes = WidgetAutomationId
 
 #################################################################
 # Other more advanced settings
