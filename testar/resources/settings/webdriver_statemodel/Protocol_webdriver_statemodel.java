@@ -127,6 +127,8 @@ public class Protocol_webdriver_statemodel extends WebdriverProtocol {
 
 		// Propagate followLinks setting
 		WdDriver.followLinks = followLinks;
+		
+	    WdDriver.fullScreen = true;
 
 		// Override ProtocolUtil to allow WebDriver screenshots
 		protocolUtil = new WdProtocolUtil();
