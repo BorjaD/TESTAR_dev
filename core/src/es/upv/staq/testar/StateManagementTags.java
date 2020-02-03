@@ -291,6 +291,7 @@ public class StateManagementTags {
             add(WidgetItemStatus);
             add(WidgetPath);
             add(WidgetBoundary);
+            add(WidgetIsOffscreen);
             // new
             add(WidgetAccelatorKey);
             add(WidgetAccessKey);
@@ -371,6 +372,7 @@ public class StateManagementTags {
         settingsMap.put(WidgetItemType, "WidgetItemType");
         settingsMap.put(WidgetItemStatus, "WidgetItemStatus");
         settingsMap.put(WidgetPath, "WidgetPath");
+        settingsMap.put(WidgetIsOffscreen, "WidgetIsOffscreen");
         settingsMap.put(WidgetAccelatorKey, "WidgetAccelatorKey");
         settingsMap.put(WidgetAccessKey, "WidgetAccessKey");
         settingsMap.put(WidgetAriaProperties, "WidgetAriaProperties");
@@ -438,6 +440,7 @@ public class StateManagementTags {
             put(WidgetItemType, Group.General);
             put(WidgetItemStatus, Group.General);
             put(WidgetPath, Group.General);
+            put(WidgetIsOffscreen, Group.General);
             put(WidgetAccelatorKey, Group.General);
             put(WidgetAccessKey, Group.General);
             put(WidgetAriaProperties, Group.General);
