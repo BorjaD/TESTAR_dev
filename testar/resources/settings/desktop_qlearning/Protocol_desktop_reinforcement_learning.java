@@ -32,12 +32,22 @@ import nl.ou.testar.ReinforcementLearning.ActionSelectors.ActionSelector;
 import nl.ou.testar.ReinforcementLearning.GuiStateGraphForQlearning;
 import nl.ou.testar.ReinforcementLearning.ActionSelectors.ReinforcementLearningActionSelector;
 import org.fruit.alayer.Action;
+import org.fruit.alayer.Roles;
+import org.fruit.alayer.SUT;
 import org.fruit.alayer.State;
+import org.fruit.alayer.Tags;
+import org.fruit.alayer.Widget;
+import org.fruit.alayer.actions.AnnotatingActionCompiler;
+import org.fruit.alayer.actions.StdActionCompiler;
+import org.fruit.alayer.exceptions.ActionBuildException;
 import org.fruit.monkey.Settings;
 import org.testar.protocols.DesktopProtocol;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import static org.fruit.alayer.Tags.*;
+
 import java.util.Set;
 
 /**
@@ -58,6 +68,79 @@ public class Protocol_desktop_reinforcement_learning extends DesktopProtocol {
 		// TODO replace with factory
 		actionSelector = new ReinforcementLearningActionSelector(new GuiStateGraphForQlearning());
 		super.initialize(settings);
+	}
+
+	/**
+	 * This method is used by TESTAR to determine the set of currently available actions.
+	 * You can use the SUT's current state, analyze the widgets and their properties to create
+	 * a set of sensible actions, such as: "Click every Button which is enabled" etc.
+	 * The return value is supposed to be non-null. If the returned set is empty, TESTAR
+	 * will stop generation of the current action and continue with the next one.
+	 * @param system the SUT
+	 * @param state the SUT's current state
+	 * @return  a set of actions
+	 */
+	@Override
+	protected Set<Action> deriveActions(SUT system, State state) throws ActionBuildException{
+		//The super method returns a ONLY actions for killing unwanted processes if needed, or bringing the SUT to
+		//the foreground. You should add all other actions here yourself.
+		// These "special" actions are prioritized over the normal GUI actions in selectAction() / preSelectAction().
+		Set<Action> actions = super.deriveActions(system,state);
+
+		// To derive actions (such as clicks, drag&drop, typing ...) we should first create an action compiler.
+		StdActionCompiler ac = new AnnotatingActionCompiler();
+
+		// To find all possible actions that TESTAR can click on we should iterate through all widgets of the state.
+		for(Widget w : state){
+			//optional: iterate through top level widgets based on Z-index:
+			//for(Widget w : getTopWidgets(state)){
+
+			if(w.get(Tags.Role, Roles.Widget).toString().equalsIgnoreCase("UIAMenu")){
+				// filtering out actions on menu-containers (that would add an action in the middle of the menu)
+				continue; // skip this iteration of the for-loop
+			}
+
+			// Only consider enabled and non-blocked widgets
+			if(w.get(Enabled, true) && !w.get(Blocked, false)){
+
+				// Do not build actions for widgets on the blacklist
+				// The blackListed widgets are those that have been filtered during the SPY mode with the
+				//CAPS_LOCK + SHIFT + Click clickfilter functionality.
+				if (!blackListed(w)){
+
+					//For widgets that are:
+					// - clickable
+					// and
+					// - unFiltered by any of the regular expressions in the Filter-tab, or
+					// - whitelisted using the clickfilter functionality in SPY mode (CAPS_LOCK + SHIFT + CNTR + Click)
+					// We want to create actions that consist of left clicking on them
+					if(isClickable(w) && (isUnfiltered(w) || whiteListed(w))) {
+						//Create a left click action with the Action Compiler, and add it to the set of derived actions
+						actions.add(ac.leftClickAt(w));
+					}
+
+					//For widgets that are:
+					// - typeable
+					// and
+					// - unFiltered by any of the regular expressions in the Filter-tab, or
+					// - whitelisted using the clickfilter functionality in SPY mode (CAPS_LOCK + SHIFT + CNTR + Click)
+					// We want to create actions that consist of typing into them
+					if(isTypeable(w) && (isUnfiltered(w) || whiteListed(w))) {
+						//Create a type action with the Action Compiler, and add it to the set of derived actions
+
+						// For Reinforcement Learning purposes, we will use temporally this text for type actions
+						actions.add(ac.clickTypeInto(w, "SameTypeStringText", true));
+					}
+
+					//Add sliding actions (like scroll, drag and drop) to the derived actions
+					//method defined below.
+
+					// For Reinforcement Learning purposes, we will disable temporally scroll actions
+					//addSlidingActions(actions,ac,SCROLL_ARROW_SIZE,SCROLL_THICK,w, state);
+				}
+			}
+		}
+		return actions;
 	}
 
 	/**
