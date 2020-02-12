@@ -46,9 +46,12 @@ public class RLTags extends TagsBase  {
 	 */
 	public static final Tag<Double> SarsaValue = from("SarsaValue", Double.class);
 	
+	public static final Tag<Double> HalfValue = from("HalfValue", Double.class);
+	
 	private static Set<Tag<Double>> reinforcementLearningTags = new HashSet<Tag<Double>>() {
 		{
 			add(SarsaValue);
+			add(HalfValue);
 		}
 	};
 

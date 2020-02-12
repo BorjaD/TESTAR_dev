@@ -30,6 +30,7 @@
 
 import nl.ou.testar.ReinforcementLearning.ActionSelectors.ActionSelector;
 import nl.ou.testar.ReinforcementLearning.GuiStateGraphForQlearning;
+import nl.ou.testar.ReinforcementLearning.RLTags;
 import nl.ou.testar.ReinforcementLearning.ActionSelectors.ReinforcementLearningActionSelector;
 import org.fruit.alayer.Action;
 import org.fruit.alayer.Roles;
@@ -166,8 +167,28 @@ public class Protocol_desktop_reinforcement_learning extends DesktopProtocol {
 		if (preSelectedAction != null) {
 			return preSelectedAction;
 		}
-
-		// select action based on state and set of actions
-		return  actionSelector.selectAction(state, actions);
+		
+		double maxHalfValue = 0.0;
+		Action actionToExecute = super.selectAction(state, actions); //random by default
+		
+		for(Action a : actions) {
+			// If never executed priorize
+			if(a.get(RLTags.HalfValue, null) == null) {
+				System.out.println(String.format("***** Action: %s was never executed", a.get(Tags.Desc,"")));
+				return a;
+			}
+			else {
+				if(a.get(RLTags.HalfValue) > maxHalfValue) {
+					maxHalfValue = (a.get(RLTags.HalfValue));
+					actionToExecute = a;
+				}
+					
+			}
+		}
+		
+		System.out.println(String.format("***** Selected Action: %s with Value %s",
+				actionToExecute.get(Tags.Desc,""), actionToExecute.get(RLTags.HalfValue).toString()));
+		
+		return  actionToExecute;
 	}
 }

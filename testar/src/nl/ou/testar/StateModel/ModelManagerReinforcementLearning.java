@@ -16,6 +16,8 @@ import org.fruit.alayer.Tag;
 import org.fruit.alayer.Tags;
 
 import javax.annotation.Nullable;
+
+import java.util.HashMap;
 import java.util.Set;
 
 public class ModelManagerReinforcementLearning extends ModelManager implements StateModelManager  {
@@ -40,35 +42,51 @@ public class ModelManagerReinforcementLearning extends ModelManager implements S
      */
     @Override
     public void notifyNewStateReached(State newState, Set<Action> actions) {
-        updateQValue(newState);
-        
-        // execute other code
+
         super.notifyNewStateReached(newState, actions);
         
+    	HashMap<String, Action> surfaceActions = new HashMap<>();
+    	actions.forEach(a -> surfaceActions.put(a.get(Tags.AbstractIDCustom), a));
+    	
+    	if (currentAbstractState == null) {
+    		return;
+    	}
+    	
+    	for (AbstractAction modelAbstractAction : currentAbstractState.getActions()) {
+    		
+			if(modelAbstractAction.getAttributes().get(RLTags.HalfValue, null) != null 
+					&& surfaceActions.containsKey(modelAbstractAction.getActionId())) {
+				
+				Action ia = surfaceActions.get(modelAbstractAction.getActionId());
+				ia.set(RLTags.HalfValue, modelAbstractAction.getAttributes().get(RLTags.HalfValue));
+				
+			}
+			
+		}
+    	
         for(Action a : actions)
         	getAbstractActionQValue(a);
+    }
+    
+    @Override
+    public void notifyActionExecution(Action action) {
+    	super.notifyActionExecution(action);
+    	updateQValue();
     }
 
     /**
      * Update the Q-value
      * @param incomingState
      */
-    private void updateQValue(@Nullable final State incomingState) {
-        // validate
-        final AbstractAction executedAction = actionUnderExecution;
-        final AbstractState outgoingState = currentAbstractState;
-        if (outgoingState == null || executedAction == null) {
-            return;
-        }
-
-        final QFunction qFunction = new QLearningQFunction(graph, new QLearningRewardFunction(graph));
-        double qValue = qFunction.getQValue(outgoingState, incomingState, executedAction);
-
-        // save Q-value
-        graph.saveqValue(outgoingState, executedAction, qValue);
-        
+    private void updateQValue() {
         // Set RL Tag in the AbstractAction
-        actionUnderExecution.addAttribute(RLTags.SarsaValue, qValue);
+        if(actionUnderExecution.getAttributes().get(RLTags.HalfValue, null) == null) {
+        	actionUnderExecution.addAttribute(RLTags.HalfValue, 1.0);
+        }
+        else {
+        	double halfq = (actionUnderExecution.getAttributes().get(RLTags.HalfValue)) / 2.0;
+        	actionUnderExecution.addAttribute(RLTags.HalfValue, halfq);
+        }
     }
     
     public double getAbstractActionQValue(Action action) {
@@ -90,14 +108,14 @@ public class ModelManagerReinforcementLearning extends ModelManager implements S
     		return 1.0;
     	}
 
-    	if(absAction.getAttributes().get(RLTags.SarsaValue, null) == null) {
+    	if(absAction.getAttributes().get(RLTags.HalfValue, null) == null) {
     		// Not Q-Value associated, Max Q-Value ?
     		System.out.println(String.format("Action %s has not a Q-Value associated, returning X value", action.get(Tags.AbstractIDCustom,"")));
     		return 1.0;
     	}
     	
     	else {
-        	double qValue = absAction.getAttributes().get(RLTags.SarsaValue);
+        	double qValue = absAction.getAttributes().get(RLTags.HalfValue);
     		System.out.println(String.format("Action %s has a Q-Value of %s", action.get(Tags.AbstractIDCustom,""), qValue));
     		return qValue;
     	}

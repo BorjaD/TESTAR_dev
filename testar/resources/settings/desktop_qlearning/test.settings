@@ -23,7 +23,7 @@ Mode = Generate
 # The SUT must be manually started and closed.
 #################################################################
 SUTConnector = COMMAND_LINE
-SUTConnectorValue = c:\\windows\\system32\\notepad.exe
+SUTConnectorValue = java -jar "suts/4botones.jar"
 
 #################################################################
 # Sequences
@@ -32,7 +32,7 @@ SUTConnectorValue = c:\\windows\\system32\\notepad.exe
 #################################################################
 
 Sequences = 1
-SequenceLength = 3
+SequenceLength = 10
 
 #################################################################
 # Oracles based on suspicious titles
@@ -110,12 +110,12 @@ StateModelEnabled = true
 DataStore = OrientDB
 DataStoreType = plocal
 DataStoreServer = localhost
-DataStoreDirectory = D:\\orientdb\\databases
+DataStoreDirectory = C:\\orientdb\\databases
 DataStoreDB = testar
 DataStoreUser = testar
 DataStorePassword = testar
-DataStoreMode = delayed
-ApplicationName = Notepad
+DataStoreMode = instant
+ApplicationName = 4buttons
 ApplicationVersion = 1.0.0
 
 #################################################################
@@ -124,7 +124,7 @@ ApplicationVersion = 1.0.0
 # Specify the widget attributes that you wish to use in constructing
 # the widget and state hash strings. Use a comma separated list.
 #################################################################
-AbstractStateAttributes = WidgetControlType
+AbstractStateAttributes = WidgetTitle
 
 #################################################################
 # Other more advanced settings
@@ -142,13 +142,13 @@ FaultThreshold = 0.000000001
 DrawWidgetUnderCursor = true
 MyClassPath = ./settings
 OnlySaveFaultySequences = false
-ActionDuration = 0.1
+ActionDuration = 1
 ShowVisualSettingsDialogOnStartup = true
 ReplayRetryTime = 30.0
 Delete =
 MaxTime = 3.1536E7
 ShowSettingsAfterTest = true
-TimeToWaitAfterAction = 0.1
+TimeToWaitAfterAction = 1
 StartupTime = 10.0
 DrawWidgetInfo = false
 TimeToFreeze = 30.0
