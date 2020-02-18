@@ -1,3 +1,34 @@
+/***************************************************************************************************
+ *
+ * Copyright (c) 2020 Universitat Politecnica de Valencia - www.upv.es
+ * Copyright (c) 2020 Open Universiteit - www.ou.nl
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *******************************************************************************************************/
+
+
 package nl.ou.testar.StateModel;
 
 import java.io.File;
@@ -5,7 +36,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -103,34 +136,41 @@ public class ModelDifferenceManager {
 			//TODO: instead of (for) prepare a better Set difference comparison or,
 			//TODO: prepare OrientDB queries to obtain the difference at DB level
 
-			Set<String> dissapearedImages = new HashSet<>();
-			Set<String> newImages = new HashSet<>();
+			Set<String> dissapearedStatesImages = new HashSet<>();
+			Set<String> dissapearedActionsDesc = new HashSet<>();
+			
+			Set<String> newStatesImages = new HashSet<>();
+			Set<String> newActionsDesc = new HashSet<>();
 
 			System.out.println("\n ---- DISSAPEARED ABSTRACT STATES ----");
 			for(String s : abstractStateOne)
 				if(!abstractStateTwo.contains(s)) {
 					System.out.println(s);
-					dissapearedImages.add(screenshotConcreteState(sessionDB, concreteStateId(sessionDB, s), "DissapearedState"));
+					dissapearedStatesImages.add(screenshotConcreteState(sessionDB, concreteStateId(sessionDB, s), "DissapearedState"));
 				}
 
 			System.out.println("\n ---- NEW ABSTRACT STATES ----");
 			for(String s : abstractStateTwo)
 				if(!abstractStateOne.contains(s)) {
 					System.out.println(s);
-					newImages.add(screenshotConcreteState(sessionDB, concreteStateId(sessionDB, s), "NewState"));
+					newStatesImages.add(screenshotConcreteState(sessionDB, concreteStateId(sessionDB, s), "NewState"));
 				}
 
 			System.out.println("\n ---- DISSAPEARED ABSTRACT ACTIONS ----");
 			for(String s : abstractActionOne)
-				if(!abstractActionTwo.contains(s))
+				if(!abstractActionTwo.contains(s)) {
 					System.out.println(s);
+					dissapearedActionsDesc.add(concreteActionDesc(sessionDB, s));
+				}
 
 			System.out.println("\n ---- NEW ABSTRACT ACTIONS ----");
 			for(String s : abstractActionTwo)
-				if(!abstractActionOne.contains(s))
+				if(!abstractActionOne.contains(s)) {
 					System.out.println(s);
+					newActionsDesc.add(concreteActionDesc(sessionDB, s));
+				}
 			
-			createHTMLreport(dissapearedImages, newImages);
+			createHTMLreport(dissapearedStatesImages, newStatesImages, dissapearedActionsDesc, newActionsDesc);
 
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -140,9 +180,24 @@ public class ModelDifferenceManager {
 
 	}
 
+	/**
+	 * Obtain the existing State Model Identifier from the name and version of one application
+	 * 
+	 * @param sessionDB
+	 * @param appName
+	 * @param appVer
+	 * @return modelIdentifier
+	 */
 	private static String abstractStateModelInfo(ODatabaseSession sessionDB, String appName, String appVer) {
-		OResultSet resultSet = sessionDB.query("SELECT FROM AbstractStateModel where applicationName=\"" + appName
-				+ "\" and applicationVersion=\"" + appVer + "\"");
+		
+		String stmt = "SELECT FROM AbstractStateModel where applicationName = :applicationName and "
+				+ "applicationVersion = :applicationVersion";
+		
+		Map<String, Object> params = new HashMap<>();
+		params.put("applicationName", appName);
+		params.put("applicationVersion", appVer);
+		
+		OResultSet resultSet = sessionDB.query(stmt, params);
 
 		while (resultSet.hasNext()) {
 			OResult result = resultSet.next();
@@ -166,12 +221,24 @@ public class ModelDifferenceManager {
 		return "";
 	}
 
+	/**
+	 * Obtain all existing abstractStates identifiers of one State Model using his Identifier
+	 * 
+	 * @param sessionDB
+	 * @param modelIdentifier
+	 * @return All existing Abstract States identifiers
+	 */
 	private static Set<String> abstractState(ODatabaseSession sessionDB, String modelIdentifier) {
-		OResultSet resultSet = sessionDB.query("SELECT FROM AbstractState WHERE modelIdentifier = \"" 
-				+ modelIdentifier + "\"");
-
+		
 		Set<String> abstractStates = new HashSet<>();
-
+		
+		String stmt = "SELECT FROM AbstractState where modelIdentifier = :modelIdentifier";
+		
+		Map<String, Object> params = new HashMap<>();
+		params.put("modelIdentifier", modelIdentifier);
+		
+		OResultSet resultSet = sessionDB.query(stmt, params);
+		
 		System.out.println("**** Existing AbstractStates ****");
 
 		while (resultSet.hasNext()) {
@@ -192,11 +259,23 @@ public class ModelDifferenceManager {
 		return abstractStates;
 	}
 
+	/**
+	 * Obtain all existing abstractActions identifiers of one State Model using his Identifier
+	 * 
+	 * @param sessionDB
+	 * @param modelIdentifier
+	 * @return All existing Abstract Actions identifiers
+	 */
 	private static Set<String> abstractAction(ODatabaseSession sessionDB, String modelIdentifier) {
-		OResultSet resultSet = sessionDB.query("SELECT FROM AbstractAction WHERE modelIdentifier = \"" 
-				+ modelIdentifier + "\"");
-
+		
 		Set<String> abstractActions = new HashSet<>();
+		
+		String stmt = "SELECT FROM AbstractAction where modelIdentifier = :modelIdentifier";
+		
+		Map<String, Object> params = new HashMap<>();
+		params.put("modelIdentifier", modelIdentifier);
+		
+		OResultSet resultSet = sessionDB.query(stmt, params);
 
 		System.out.println("**** Existing AbstractActions ****");
 
@@ -216,10 +295,85 @@ public class ModelDifferenceManager {
 
 		return abstractActions;
 	}
+	
+	/**
+	 * Obtain the ConcreteAction Description from an AbstractAction Identifier
+	 * 
+	 * @param sessionDB
+	 * @param AbstractActionId
+	 * @return ConcreteActionDescription
+	 */
+	private static String concreteActionDesc(ODatabaseSession sessionDB, String abstractActionId) {
+		
+		String concreteActionsDescription = "";
+		
+		String stmtAbstract = "SELECT FROM AbstractAction WHERE actionId = :actionId";
+		
+		Map<String, Object> paramsAbstract = new HashMap<>();
+		paramsAbstract.put("actionId", abstractActionId);
+		
+		OResultSet resultSetAbstract = sessionDB.query(stmtAbstract, paramsAbstract);
 
-	private static String concreteStateId(ODatabaseSession sessionDB, String abstractId) {
-		OResultSet resultSet = sessionDB.query("SELECT FROM AbstractState WHERE stateId = \"" 
-				+ abstractId + "\" LIMIT 1");
+		if (resultSetAbstract.hasNext()) {
+			OResult resultAbstract = resultSetAbstract.next();
+			// we're expecting an edge
+			if (resultAbstract.isEdge()) {
+				Optional<OEdge> opAbstract = resultAbstract.getEdge();
+				if (!opAbstract.isPresent()) return "";
+				OEdge modelEdgeAbstract = opAbstract.get();
+
+				try {
+					for(String concreteActionId : (Set<String>) modelEdgeAbstract.getProperty("concreteActionIds"))
+						if(!concreteActionId.isEmpty()) {
+							
+							String stmtConcrete = "SELECT FROM ConcreteAction WHERE actionId = :actionId";
+							
+							Map<String, Object> paramsConcrete = new HashMap<>();
+							paramsConcrete.put("actionId", concreteActionId);
+							
+							OResultSet resultSetConcrete = sessionDB.query(stmtConcrete, paramsConcrete);
+							
+							if (resultSetConcrete.hasNext()) {
+								OResult resultConcrete = resultSetConcrete.next();
+								// we're expecting a vertex
+								if (resultConcrete.isEdge()) {
+									Optional<OEdge> opConcrete = resultConcrete.getEdge();
+									if (!opConcrete.isPresent()) continue;
+									OEdge modelEdgeConcrete = opConcrete.get();
+									
+									concreteActionsDescription = modelEdgeConcrete.getProperty("Desc");
+								}
+							}
+							
+							resultSetConcrete.close();
+							
+							if(!concreteActionsDescription.isEmpty()) break;
+							
+						}
+				}catch (Exception e) {System.out.println("ERROR: ModelDifferenceManager concreteActionIds() ");}
+			}
+		}
+		
+		resultSetAbstract.close();
+
+		return concreteActionsDescription;
+	}
+
+	/**
+	 * Obtain one Concrete State Identifier of one Abstract State Identifier
+	 * 
+	 * @param sessionDB
+	 * @param stateId
+	 * @return Concrete State Identifier
+	 */
+	private static String concreteStateId(ODatabaseSession sessionDB, String stateId) {
+		
+		String stmt = "SELECT FROM AbstractState WHERE stateId = :stateId LIMIT 1";
+		
+		Map<String, Object> params = new HashMap<>();
+		params.put("stateId", stateId);
+		
+		OResultSet resultSet = sessionDB.query(stmt, params);
 
 		while (resultSet.hasNext()) {
 			OResult result = resultSet.next();
@@ -242,9 +396,22 @@ public class ModelDifferenceManager {
 		return "";
 	}
 
+	/**
+	 * Create and return the path of one Concrete State Screenshot by the identifier
+	 * 
+	 * @param sessionDB
+	 * @param concreteId
+	 * @param folderName
+	 * @return path of existing screenshot
+	 */
 	private static String screenshotConcreteState(ODatabaseSession sessionDB, String concreteId, String folderName) {
-		OResultSet resultSet = sessionDB.query("SELECT FROM ConcreteState WHERE ConcreteIDCustom = \"" 
-				+ concreteId + "\" LIMIT 1");
+		
+		String stmt = "SELECT FROM ConcreteState WHERE ConcreteIDCustom = :concreteId LIMIT 1";
+		
+		Map<String, Object> params = new HashMap<>();
+		params.put("concreteId", concreteId);
+		
+		OResultSet resultSet = sessionDB.query(stmt, params);
 
 		while (resultSet.hasNext()) {
 			OResult result = resultSet.next();
@@ -319,7 +486,8 @@ public class ModelDifferenceManager {
 
 	}
 
-	private static void createHTMLreport(Set<String> dissapearedImages, Set<String> newImages) {
+	private static void createHTMLreport(Set<String> dissapearedStatesImages, Set<String> newStatesImages, 
+			Set<String> dissapearedActionsDesc, Set<String> newActionsDesc) {
 		try {
 			String[] HEADER = new String[] {
 					"<!DOCTYPE html>",
@@ -342,16 +510,32 @@ public class ModelDifferenceManager {
 			out.println("<h4> Dissapeared Abstract States </h4>");
 			out.flush();
 
-			for(String path : dissapearedImages) {
+			for(String path : dissapearedStatesImages) {
 				out.println("<p><img src=\""+path+"\"></p>");
+				out.flush();
+			}
+			
+			out.println("<h2> Dissapeared Actions, Concrete Description </h2>");
+			out.flush();
+
+			for(String desc : dissapearedActionsDesc) {
+				out.println("<p>" + desc + "</p>");
 				out.flush();
 			}
 			
 			out.println("<h4> New Abstract States </h4>");
 			out.flush();
 
-			for(String path : newImages) {
+			for(String path : newStatesImages) {
 				out.println("<p><img src=\""+path+"\"></p>");
+				out.flush();
+			}
+			
+			out.println("<h2> New Actions Discovered, Concrete Description </h2>");
+			out.flush();
+
+			for(String desc : newActionsDesc) {
+				out.println("<p>" + desc + "</p>");
 				out.flush();
 			}
 			
