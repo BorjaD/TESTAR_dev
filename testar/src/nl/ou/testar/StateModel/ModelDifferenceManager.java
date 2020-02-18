@@ -125,52 +125,109 @@ public class ModelDifferenceManager {
 
 		try (ODatabaseSession sessionDB = orientDB.open(dbConnection, dbConfig.getUser(), dbConfig.getPassword())){
 
-			String modelIdOne = abstractStateModelInfo(sessionDB, appNameOne, appVerOne);
-			Set<String> abstractStateOne = new HashSet<>(abstractState(sessionDB, modelIdOne));
-			Set<String> abstractActionOne = new HashSet<>(abstractAction(sessionDB, modelIdOne));
-
-			String modelIdTwo = abstractStateModelInfo(sessionDB, appNameTwo, appVerTwo);
-			Set<String> abstractStateTwo = new HashSet<>(abstractState(sessionDB, modelIdTwo));
-			Set<String> abstractActionTwo = new HashSet<>(abstractAction(sessionDB, modelIdTwo));
-
-			//TODO: instead of (for) prepare a better Set difference comparison or,
-			//TODO: prepare OrientDB queries to obtain the difference at DB level
-
-			Set<String> dissapearedStatesImages = new HashSet<>();
-			Set<String> dissapearedActionsDesc = new HashSet<>();
+			/**
+			 * TODO: instead of (for) prepare a better Set difference comparison or
+			 * TODO: prepare OrientDB queries to obtain the difference at DB level
+			 */
 			
-			Set<String> newStatesImages = new HashSet<>();
-			Set<String> newActionsDesc = new HashSet<>();
-
-			System.out.println("\n ---- DISSAPEARED ABSTRACT STATES ----");
-			for(String s : abstractStateOne)
-				if(!abstractStateTwo.contains(s)) {
-					System.out.println(s);
-					dissapearedStatesImages.add(screenshotConcreteState(sessionDB, concreteStateId(sessionDB, s), "DissapearedState"));
-				}
-
-			System.out.println("\n ---- NEW ABSTRACT STATES ----");
-			for(String s : abstractStateTwo)
-				if(!abstractStateOne.contains(s)) {
-					System.out.println(s);
-					newStatesImages.add(screenshotConcreteState(sessionDB, concreteStateId(sessionDB, s), "NewState"));
-				}
-
-			System.out.println("\n ---- DISSAPEARED ABSTRACT ACTIONS ----");
-			for(String s : abstractActionOne)
-				if(!abstractActionTwo.contains(s)) {
-					System.out.println(s);
-					dissapearedActionsDesc.add(concreteActionDesc(sessionDB, s));
-				}
-
-			System.out.println("\n ---- NEW ABSTRACT ACTIONS ----");
-			for(String s : abstractActionTwo)
-				if(!abstractActionOne.contains(s)) {
-					System.out.println(s);
-					newActionsDesc.add(concreteActionDesc(sessionDB, s));
-				}
+			// Identifiers of the State Models we want to compare
+			String identifierModelOne = abstractStateModelInfo(sessionDB, appNameOne, appVerOne);
+			String identifierModelTwo = abstractStateModelInfo(sessionDB, appNameTwo, appVerTwo);
 			
-			createHTMLreport(dissapearedStatesImages, newStatesImages, dissapearedActionsDesc, newActionsDesc);
+			// Set Collection with all existing Abstract States of the State Models we want to compare
+			Set<String> allAbstractStatesModelOne = new HashSet<>(abstractState(sessionDB, identifierModelOne));
+			Set<String> allAbstractStatesModelTwo = new HashSet<>(abstractState(sessionDB, identifierModelTwo));
+			
+			// Map < Abstract State Id, Set < All Abstract Actions > >
+			// Associate all existing Abstract States Identifiers with the Collection of available Abstract Actions on each Abstract State
+			HashMap<String, Set<String>> stateIdWithAllActionsModelOne = new HashMap<>(abstractAction(sessionDB, identifierModelOne));
+			HashMap<String, Set<String>> stateIdWithAllActionsModelTwo = new HashMap<>(abstractAction(sessionDB, identifierModelTwo));
+
+			// Prepare a Collection to save all disappeared Abstract States
+			Set<String> disappearedAbstractStates = new HashSet<>();
+			// Prepare a Map to associate an Abstract State identifier with a visual Screenshot (we will find a Concrete State)  
+			HashMap<String, String> disappearedStatesImages = new HashMap<>();
+			// Prepare a Map to associate an Abstract State identifier with all the disappeared Action Description
+			HashMap<String, Set<String>> disappearedActionsDesc = new HashMap<>();
+			
+			// Prepare a Collection to save all new Abstract States
+			Set<String> newAbstractStates = new HashSet<>();
+			// Prepare a Map to associate an Abstract State identifier with a visual Screenshot (we will find a Concrete State)
+			HashMap<String, String> newStatesImages = new HashMap<>();
+			// Prepare a Map to associate an Abstract State identifier with all the new Action Description
+			HashMap<String, Set<String>> newActionsDesc = new HashMap<>();
+
+			/**
+			 * Check which Abstract States of Model One don't exists at Model Two
+			 * Disappeared Abstract States
+			 */
+			
+			allAbstractStatesModelOne.forEach( abstractStateId -> {
+
+				// Only if doesn't exists in the State Model Two
+				if(!allAbstractStatesModelTwo.contains(abstractStateId)) {
+
+					disappearedAbstractStates.add(abstractStateId);
+
+					String screenshotPath = screenshotConcreteState(sessionDB, concreteStateId(sessionDB, abstractStateId), "disappearedState");
+					disappearedStatesImages.put(abstractStateId, screenshotPath);
+
+					// Update a Description Action Collection with the disappeared, to update the Map disappearedActionsDesc
+					stateIdWithAllActionsModelOne.get(abstractStateId).forEach( abstractActionId -> {
+
+						if(disappearedActionsDesc.get(abstractStateId) == null) {
+							Set<String> descriptions = new HashSet<>();
+							descriptions.add(concreteActionDesc(sessionDB, abstractActionId));
+							disappearedActionsDesc.put(abstractStateId, descriptions);
+						} else {
+							Set<String> descriptions = disappearedActionsDesc.get(abstractStateId);
+							descriptions.add(concreteActionDesc(sessionDB, abstractActionId));
+							disappearedActionsDesc.put(abstractStateId, descriptions);
+						}
+					});
+
+				}
+
+			});
+
+			/**
+			 * Check which Abstract States of Model Two don't exists at Model One
+			 * New Abstract States
+			 */
+			
+			allAbstractStatesModelTwo.forEach( abstractStateId -> {
+				
+				// Only if doesn't exists in the State Model One
+				if(!allAbstractStatesModelOne.contains(abstractStateId)) {
+					
+					newAbstractStates.add(abstractStateId);
+					
+					String screenshotPath = screenshotConcreteState(sessionDB, concreteStateId(sessionDB, abstractStateId), "NewState");
+					newStatesImages.put(abstractStateId, screenshotPath);
+					
+					// Update a Description Action Collection with the news, to update the Map newActionsDesc
+					stateIdWithAllActionsModelTwo.get(abstractStateId).forEach( abstractActionId -> {
+						
+						if(newActionsDesc.get(abstractStateId) == null) {
+							Set<String> descriptions = new HashSet<>();
+							descriptions.add(concreteActionDesc(sessionDB, abstractActionId));
+							newActionsDesc.put(abstractStateId, descriptions);
+						} else {
+							Set<String> descriptions = newActionsDesc.get(abstractStateId);
+							descriptions.add(concreteActionDesc(sessionDB, abstractActionId));
+							newActionsDesc.put(abstractStateId, descriptions);
+						}
+						
+					});
+					
+				}
+				
+			});
+			
+			createHTMLreport(
+					disappearedAbstractStates, newAbstractStates,
+					disappearedStatesImages, newStatesImages,
+					disappearedActionsDesc, newActionsDesc);
 
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -207,12 +264,6 @@ public class ModelDifferenceManager {
 				if (!op.isPresent()) continue;
 				OVertex modelVertex = op.get();
 
-				System.out.println("StateModel: " + appName + " " + appVer);
-				System.out.println("Collecting DB State Model data...");
-
-				System.out.println("JSON: " + result.toJSON());
-				System.out.println("Edges: " + modelVertex.getEdges(ODirection.BOTH));
-
 				return modelVertex.getProperty("modelIdentifier");
 			}
 		}
@@ -222,11 +273,11 @@ public class ModelDifferenceManager {
 	}
 
 	/**
-	 * Obtain all existing abstractStates identifiers of one State Model using his Identifier
+	 * Obtain a Collection of all existing abstractStates identifiers of one State Model using his Identifier
 	 * 
 	 * @param sessionDB
 	 * @param modelIdentifier
-	 * @return All existing Abstract States identifiers
+	 * @return Collection of Abstract States 
 	 */
 	private static Set<String> abstractState(ODatabaseSession sessionDB, String modelIdentifier) {
 		
@@ -238,8 +289,6 @@ public class ModelDifferenceManager {
 		params.put("modelIdentifier", modelIdentifier);
 		
 		OResultSet resultSet = sessionDB.query(stmt, params);
-		
-		System.out.println("**** Existing AbstractStates ****");
 
 		while (resultSet.hasNext()) {
 			OResult result = resultSet.next();
@@ -248,9 +297,7 @@ public class ModelDifferenceManager {
 				Optional<OVertex> op = result.getVertex();
 				if (!op.isPresent()) continue;
 				OVertex modelVertex = op.get();
-
-				System.out.println("JSON: " + result.toJSON());
-				System.out.println("Edges: " + modelVertex.getEdges(ODirection.BOTH));
+				
 				abstractStates.add(modelVertex.getProperty("stateId"));
 			}
 		}
@@ -260,15 +307,15 @@ public class ModelDifferenceManager {
 	}
 
 	/**
-	 * Obtain all existing abstractActions identifiers of one State Model using his Identifier
+	 * Obtain a Map of all existing Abstract Actions of every Abstract State of one State Model using his Identifier
 	 * 
 	 * @param sessionDB
 	 * @param modelIdentifier
-	 * @return All existing Abstract Actions identifiers
+	 * @return Map of all existing Abstract Actions of every Abstract State
 	 */
-	private static Set<String> abstractAction(ODatabaseSession sessionDB, String modelIdentifier) {
+	private static HashMap<String, Set<String>> abstractAction(ODatabaseSession sessionDB, String modelIdentifier) {
 		
-		Set<String> abstractActions = new HashSet<>();
+		HashMap<String, Set<String>> abstractActions = new HashMap<>();
 		
 		String stmt = "SELECT FROM AbstractAction where modelIdentifier = :modelIdentifier";
 		
@@ -277,8 +324,6 @@ public class ModelDifferenceManager {
 		
 		OResultSet resultSet = sessionDB.query(stmt, params);
 
-		System.out.println("**** Existing AbstractActions ****");
-
 		while (resultSet.hasNext()) {
 			OResult result = resultSet.next();
 			// we're expecting a vertex
@@ -286,9 +331,21 @@ public class ModelDifferenceManager {
 				Optional<OEdge> op = result.getEdge();
 				if (!op.isPresent()) continue;
 				OEdge modelEdge = op.get();
-
-				System.out.println("JSON: " + result.toJSON());
-				abstractActions.add(modelEdge.getProperty("actionId"));
+				
+				OVertex originAbstractState = modelEdge.getVertex(ODirection.OUT);
+				
+				String stateId = originAbstractState.getProperty("stateId");
+				String actionId = modelEdge.getProperty("actionId");
+				
+				if(abstractActions.get(stateId) == null) {
+					Set<String> actions = new HashSet<>();
+					actions.add(actionId);
+					abstractActions.put(stateId, actions);
+				} else {
+					Set<String> actions = abstractActions.get(stateId);
+					actions.add(actionId);
+					abstractActions.put(stateId, actions);
+				}
 			}
 		}
 		resultSet.close();
@@ -297,11 +354,11 @@ public class ModelDifferenceManager {
 	}
 	
 	/**
-	 * Obtain the ConcreteAction Description from an AbstractAction Identifier
+	 * Obtain the ConcreteAction Description from an Abstract Action Identifier
 	 * 
 	 * @param sessionDB
 	 * @param AbstractActionId
-	 * @return ConcreteActionDescription
+	 * @return Concrete Action Description
 	 */
 	private static String concreteActionDesc(ODatabaseSession sessionDB, String abstractActionId) {
 		
@@ -486,8 +543,9 @@ public class ModelDifferenceManager {
 
 	}
 
-	private static void createHTMLreport(Set<String> dissapearedStatesImages, Set<String> newStatesImages, 
-			Set<String> dissapearedActionsDesc, Set<String> newActionsDesc) {
+	private static void createHTMLreport( Set<String> disappearedAbstractStates, Set<String> newAbstractStates,
+			HashMap<String, String> disappearedStatesImages, HashMap<String, String> newStatesImages, 
+			HashMap<String, Set<String>> disappearedActionsDesc, HashMap<String, Set<String>> newActionsDesc) {
 		try {
 			String[] HEADER = new String[] {
 					"<!DOCTYPE html>",
@@ -506,40 +564,51 @@ public class ModelDifferenceManager {
 				out.println(s);
 				out.flush();
 			}
-
-			out.println("<h4> Dissapeared Abstract States </h4>");
+			
+			out.println("<h2> Disappeared Abstract States </h2>");
 			out.flush();
+			
+			
+			for(String dissState :  disappearedAbstractStates) {
 
-			for(String path : dissapearedStatesImages) {
-				out.println("<p><img src=\""+path+"\"></p>");
+				out.println("<p><img src=\"" + disappearedStatesImages.get(dissState) + "\"></p>");
 				out.flush();
+				
+				out.println("<h4> Disappeared Actions of this State, Concrete Description </h4>");
+				out.flush();
+				
+				for(String actionDesc : disappearedActionsDesc.get(dissState)) {
+					
+					out.println("<p>" + actionDesc + "</p>");
+					out.flush();
+				}
 			}
 			
-			out.println("<h2> Dissapeared Actions, Concrete Description </h2>");
+			out.println("<h2> New Abstract States </h2>");
 			out.flush();
-
-			for(String desc : dissapearedActionsDesc) {
-				out.println("<p>" + desc + "</p>");
-				out.flush();
-			}
 			
-			out.println("<h4> New Abstract States </h4>");
-			out.flush();
-
-			for(String path : newStatesImages) {
-				out.println("<p><img src=\""+path+"\"></p>");
-				out.flush();
-			}
 			
-			out.println("<h2> New Actions Discovered, Concrete Description </h2>");
-			out.flush();
+			for(String newState : newAbstractStates) {
 
-			for(String desc : newActionsDesc) {
-				out.println("<p>" + desc + "</p>");
+				out.println("<p><img src=\"" + newStatesImages.get(newState) + "\"></p>");
 				out.flush();
+				
+				out.println("<h4> New Actions Discovered on this State, Concrete Description </h4>");
+				out.flush();
+				
+				
+				for(String actionDesc : newActionsDesc.get(newState)) {
+					
+					out.println("<p>" + actionDesc + "</p>");
+					out.flush();
+				}
 			}
 			
 			out.close();
+			
+			System.out.println("\n ****************************************************************************************************** \n");
+			System.out.println("TESTAR State Model Difference report created in: " + htmlReportName);
+			System.out.println("\n ****************************************************************************************************** \n");
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
