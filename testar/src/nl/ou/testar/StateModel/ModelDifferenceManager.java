@@ -173,7 +173,9 @@ public class ModelDifferenceManager {
 					disappearedStatesImages.put(abstractStateId, screenshotPath);
 
 					// Update a Description Action Collection with the disappeared, to update the Map disappearedActionsDesc
-					stateIdWithAllActionsModelOne.get(abstractStateId).forEach( abstractActionId -> {
+					stateIdWithAllActionsModelOne.values().iterator().next().stream()
+					.filter( abstractActionId -> { return  abstractActionId != null; })
+					.forEach( abstractActionId -> {
 
 						if(disappearedActionsDesc.get(abstractStateId) == null) {
 							Set<String> descriptions = new HashSet<>();
@@ -206,7 +208,9 @@ public class ModelDifferenceManager {
 					newStatesImages.put(abstractStateId, screenshotPath);
 					
 					// Update a Description Action Collection with the news, to update the Map newActionsDesc
-					stateIdWithAllActionsModelTwo.get(abstractStateId).forEach( abstractActionId -> {
+					stateIdWithAllActionsModelTwo.values().iterator().next().stream()
+					.filter( abstractActionId -> { return  abstractActionId != null; })
+					.forEach( abstractActionId -> {
 						
 						if(newActionsDesc.get(abstractStateId) == null) {
 							Set<String> descriptions = new HashSet<>();
