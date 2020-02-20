@@ -229,7 +229,7 @@ public class ProtocolUtil {
 	// #####################
 	
 	public String getStateshot(State state){
-		return ScreenshotSerialiser.saveStateshot(state.get(Tags.ConcreteID, "NoConcreteIdAvailable"), getStateshotBinary(state));
+		return ScreenshotSerialiser.saveStateshot(state.get(Tags.ConcreteIDCustom, "NoConcreteIdAvailable"), getStateshotBinary(state));
 	}
 
 	/**
@@ -251,7 +251,7 @@ public class ProtocolUtil {
 		
 		if (viewPort.width() <= 0 || viewPort.height() <= 0)
 			return null;
-		AWTCanvas scrshot = AWTCanvas.fromScreenshot(Rect.from(viewPort.x(), viewPort.y(), viewPort.width(), viewPort.height()), AWTCanvas.StorageFormat.PNG, 1);
+		AWTCanvas scrshot = AWTCanvas.fromScreenshot(Rect.from(viewPort.x(), viewPort.y(), viewPort.width(), viewPort.height()), getRootWindowHandle(state), AWTCanvas.StorageFormat.PNG, 1);
 		return scrshot;
 	}
 	
@@ -270,9 +270,9 @@ public class ProtocolUtil {
 			}
 			if (actionArea.isEmpty())
 				return null;
-			AWTCanvas scrshot = AWTCanvas.fromScreenshot(Rect.from(actionArea.x, actionArea.y, actionArea.width, actionArea.height),
+			AWTCanvas scrshot = AWTCanvas.fromScreenshot(Rect.from(actionArea.x, actionArea.y, actionArea.width, actionArea.height), getRootWindowHandle(state),
 														 AWTCanvas.StorageFormat.PNG, 1);
-			return ScreenshotSerialiser.saveActionshot(state.get(Tags.ConcreteID, "NoConcreteIdAvailable"), action.get(Tags.ConcreteID, "NoConcreteIdAvailable"), scrshot);
+			return ScreenshotSerialiser.saveActionshot(state.get(Tags.ConcreteIDCustom, "NoConcreteIdAvailable"), action.get(Tags.ConcreteIDCustom, "NoConcreteIdAvailable"), scrshot);
 		}
 		return null;
 	}	
@@ -283,18 +283,28 @@ public class ProtocolUtil {
 		
 		AWTCanvas scrshot = AWTCanvas.fromScreenshot(Rect.from(widget.get(Tags.Shape).x(), widget.get(Tags.Shape).y(), 
 				widget.get(Tags.Shape).width(), widget.get(Tags.Shape).height()),
+				getRootWindowHandle(state),
 				 AWTCanvas.StorageFormat.PNG, 1);
 		
 		return ScreenshotSerialiser.saveActionshot(state.get(Tags.ConcreteID), widget.get(Tags.ConcreteID), scrshot);
 	}
 	
-	public AWTCanvas getWidgetshotBinary(Widget widget) {
+	public AWTCanvas getWidgetshotBinary(State state, Widget widget) {
 		if(widget.get(Tags.Shape,null) == null)
 			return null;
 		
 		return AWTCanvas.fromScreenshot(Rect.from(widget.get(Tags.Shape).x(), widget.get(Tags.Shape).y(), 
 				widget.get(Tags.Shape).width(), widget.get(Tags.Shape).height()),
+				getRootWindowHandle(state),
 				 AWTCanvas.StorageFormat.PNG, 1);
 	}
 	
+
+	private static long getRootWindowHandle(State state) {
+		long windowHandle = 0;
+		if (state.childCount() > 0) {
+			windowHandle = state.child(0).get(Tags.HWND);
+		}
+		return windowHandle;
+	}
 }

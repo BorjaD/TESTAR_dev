@@ -53,8 +53,8 @@ public class WdProtocolUtil extends ProtocolUtil {
     double height = CanvasDimensions.getCanvasHeight() + (
         state.get(WdTags.WebHorizontallyScrollable) ? scrollThick : 0);
     Rect rect = Rect.from(0, 0, width, height);
-    AWTCanvas screenshot = WdScreenshot.fromScreenshot(rect);
-    return ScreenshotSerialiser.saveStateshot(state.get(Tags.ConcreteID), screenshot);
+    AWTCanvas screenshot = WdScreenshot.fromScreenshot(rect, state.get(Tags.HWND, (long)0));
+    return ScreenshotSerialiser.saveStateshot(state.get(Tags.ConcreteIDCustom), screenshot);
   }
 
   @Override
@@ -85,8 +85,8 @@ public class WdProtocolUtil extends ProtocolUtil {
 
     Rect rect = Rect.from(
         actionArea.x, actionArea.y, actionArea.width + 1, actionArea.height + 1);
-    AWTCanvas scrshot = WdScreenshot.fromScreenshot(rect);
-    return ScreenshotSerialiser.saveActionshot(state.get(Tags.ConcreteID, "NoConcreteIdAvailable"), action.get(Tags.ConcreteID, "NoConcreteIdAvailable"), scrshot);
+    AWTCanvas scrshot = WdScreenshot.fromScreenshot(rect, state.get(Tags.HWND, (long)0));
+    return ScreenshotSerialiser.saveActionshot(state.get(Tags.ConcreteIDCustom, "NoConcreteIdAvailable"), action.get(Tags.ConcreteIDCustom, "NoConcreteIdAvailable"), scrshot);
   }
   
   @Override
@@ -97,7 +97,7 @@ public class WdProtocolUtil extends ProtocolUtil {
 		  //Get a screenshot of all the screen, because SUT ended and we can't obtain the size
 		  Rectangle screenRect = new Rectangle(Toolkit.getDefaultToolkit().getScreenSize());
 		  AWTCanvas scrshot = AWTCanvas.fromScreenshot(Rect.from(screenRect.getX(), screenRect.getY(),
-				  screenRect.getWidth(), screenRect.getHeight()), AWTCanvas.StorageFormat.PNG, 1);
+				  screenRect.getWidth(), screenRect.getHeight()), state.get(Tags.HWND, (long)0), AWTCanvas.StorageFormat.PNG, 1);
 		  return scrshot;
 	  }
 	  
@@ -106,18 +106,18 @@ public class WdProtocolUtil extends ProtocolUtil {
 	  double height = CanvasDimensions.getCanvasHeight() + (
 			  state.get(WdTags.WebHorizontallyScrollable) ? scrollThick : 0);
 	  Rect rect = Rect.from(0, 0, width, height);
-	  AWTCanvas screenshot = WdScreenshot.fromScreenshot(rect);
+	  AWTCanvas screenshot = WdScreenshot.fromScreenshot(rect, state.get(Tags.HWND, (long)0));
 	  return screenshot;
   }
 
   @Override
-  public AWTCanvas getWidgetshotBinary(Widget widget) {
+  public AWTCanvas getWidgetshotBinary(State state, Widget widget) {
 	  if(widget.get(Tags.Shape,null) == null)
 		  return null;
 
 	  Shape shape = widget.get(Tags.Shape);
 	  Rect rect = Rect.from((int) shape.x(), (int) shape.y(), (int) shape.width(), (int) shape.height());
 
-	  return WdScreenshot.fromScreenshot(rect);
+	  return WdScreenshot.fromScreenshot(rect, state.get(Tags.HWND, (long)0));
   }
 }

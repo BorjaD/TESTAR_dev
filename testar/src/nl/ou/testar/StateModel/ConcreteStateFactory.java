@@ -27,7 +27,7 @@ public abstract class ConcreteStateFactory {
         // next we want to add all the attributes contained in the state, and then do the same thing for the child widgets
         setAttributes(concreteState, newState);
         if (storeWidgets) {
-            copyWidgetTreeStructure(newState, concreteState, concreteState);
+            copyWidgetTreeStructure(newState, concreteState, concreteState, newState);
         }
 
         // get a screenshot for this concrete state
@@ -65,7 +65,7 @@ public abstract class ConcreteStateFactory {
      * @param stateModelWidget
      * @param rootWidget
      */
-    private static void copyWidgetTreeStructure(org.fruit.alayer.Widget testarWidget, Widget stateModelWidget, ConcreteState rootWidget) {
+    private static void copyWidgetTreeStructure(org.fruit.alayer.Widget testarWidget, Widget stateModelWidget, ConcreteState rootWidget, State newState) {
         // we loop through the testar widget's children to copy their attributes into new widgets
         for (int i = 0; i < testarWidget.childCount(); i++) {
             org.fruit.alayer.Widget testarChildWidget = testarWidget.child(i);
@@ -77,7 +77,7 @@ public abstract class ConcreteStateFactory {
             // then add the new model widget to the tree
             stateModelWidget.addChild(newStateModelWidget);
             // recursively deal with the entire widget tree
-            copyWidgetTreeStructure(testarChildWidget, newStateModelWidget, rootWidget);
+            copyWidgetTreeStructure(testarChildWidget, newStateModelWidget, rootWidget, newState);
             
             // get a screenshot for this widget
             ByteArrayOutputStream screenshotBytes = new ByteArrayOutputStream();
@@ -85,7 +85,7 @@ public abstract class ConcreteStateFactory {
             if(NativeLinker.getPLATFORM_OS().contains(OperatingSystems.WEBDRIVER))
             	protocolUtil = new WdProtocolUtil();
 
-            AWTCanvas screenshot = protocolUtil.getWidgetshotBinary(testarWidget.child(i));
+            AWTCanvas screenshot = protocolUtil.getWidgetshotBinary(newState, testarWidget.child(i));
             try {
                 screenshot.saveAsPng(screenshotBytes);
             } catch (IOException e) {

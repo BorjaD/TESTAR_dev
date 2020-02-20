@@ -71,7 +71,8 @@ public class Protocol_webdriver_statemodel extends WebdriverProtocol {
 			//Calendar
 			"owl-dt-calendar-cell-content",
 			// Reservation cells
-			"mat-cell"
+			"mat-cell",
+			"ng-star-inserted"
 			);
 	
 	private static List<String> alwaysClickableClasses = Arrays.asList("owl-dt-control-button-content");
@@ -148,12 +149,7 @@ public class Protocol_webdriver_statemodel extends WebdriverProtocol {
 	 */
 	@Override
 	protected SUT startSystem() throws SystemStartException {
-		SUT sut = super.startSystem();
-
-		// See remarks in WdMouse
-		mouse = sut.get(Tags.StandardMouse);
-
-		return sut;
+		return super.startSystem();
 	}
 
 	/**
@@ -199,7 +195,7 @@ public class Protocol_webdriver_statemodel extends WebdriverProtocol {
 			}
 
 			// slides can happen, even though the widget might be blocked
-			addSlidingActions(actions, ac, scrollArrowSize, scrollThick, widget, state);
+			//addSlidingActions(actions, ac, scrollArrowSize, scrollThick, widget, state);
 
 			// If the element is blocked, Testar can't click on or type in the widget
 			if (widget.get(Blocked, false)) {
