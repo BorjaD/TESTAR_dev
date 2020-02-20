@@ -39,6 +39,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 
 import org.fruit.Environment;
@@ -52,7 +54,6 @@ import org.fruit.alayer.exceptions.StateBuildException;
 import org.fruit.alayer.exceptions.SystemStartException;
 import org.fruit.alayer.webdriver.WdDriver;
 import org.fruit.alayer.webdriver.WdElement;
-import org.fruit.alayer.webdriver.WdMouse;
 import org.fruit.alayer.webdriver.WdWidget;
 import org.fruit.alayer.windows.WinProcess;
 import org.fruit.alayer.windows.Windows;
@@ -76,10 +77,10 @@ public class WebdriverProtocol extends ClickFilterLayerProtocol {
     
     protected static Set<String> existingCssClasses = new HashSet<>();
     
-	Set<String> sequencesOutputDir = new HashSet<>();
-	Set<String> htmlOutputDir = new HashSet<>();
-	Set<String> logsOutputDir = new HashSet<>();
-	Set<String> sequencesVerdicts = new HashSet<>();
+	SortedSet<String> sequencesOutputDir = new TreeSet<>();
+	SortedSet<String> htmlOutputDir = new TreeSet<>();
+	SortedSet<String> logsOutputDir = new TreeSet<>();
+	SortedSet<String> sequencesVerdicts = new TreeSet<>();
 
     /**
      * This methods is called before each test sequence, allowing for example using external profiling software on the SUT
