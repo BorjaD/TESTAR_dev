@@ -297,7 +297,8 @@ public class StateModelPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
             	ModelDifferenceDialog importDBdialog = new ModelDifferenceDialog(
-            			dataStoreTypeBox.getSelectedItem().toString(), dataStoreServerTextfield.getText());
+            			dataStoreTypeBox.getSelectedItem().toString(),
+            			dataStoreServerTextfield.getText(), dataStoreDirectoryField.getText());
             	importDBdialog.setVisible(true);
             }
         });
