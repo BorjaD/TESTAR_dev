@@ -28,6 +28,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************************************/
 
+import static org.fruit.alayer.Tags.Blocked;
+import static org.fruit.alayer.Tags.Enabled;
+
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -38,6 +41,9 @@ import org.fruit.monkey.ConfigTags;
 import org.fruit.monkey.RuntimeControlsProtocol.Modes;
 import org.testar.json.object.JsonArtefactStateModel;
 import org.testar.json.object.JsonArtefactTestResults;
+import org.fruit.alayer.actions.AnnotatingActionCompiler;
+import org.fruit.alayer.actions.StdActionCompiler;
+import org.fruit.alayer.exceptions.ActionBuildException;
 import org.testar.protocols.DesktopProtocol;
 
 import nl.ou.testar.ScreenshotJsonFile.JsonUtils;
@@ -76,6 +82,65 @@ public class Protocol_desktop_generic_statemodel extends DesktopProtocol {
 			JsonUtils.createWidgetInfoJsonFile(state);
 
 		return state;
+	}
+
+	/**
+	 * This method is used by TESTAR to determine the set of currently available actions.
+	 * You can use the SUT's current state, analyze the widgets and their properties to create
+	 * a set of sensible actions, such as: "Click every Button which is enabled" etc.
+	 * The return value is supposed to be non-null. If the returned set is empty, TESTAR
+	 * will stop generation of the current action and continue with the next one.
+	 * @param system the SUT
+	 * @param state the SUT's current state
+	 * @return  a set of actions
+	 */
+	@Override
+	protected Set<Action> deriveActions(SUT system, State state) throws ActionBuildException {
+
+		Set<Action> actions = super.deriveActions(system,state);
+
+		// To derive actions (such as clicks, drag&drop, typing ...) we should first create an action compiler.
+		StdActionCompiler ac = new AnnotatingActionCompiler();
+
+		// To find all possible actions that TESTAR can click on we should iterate through all widgets of the state.
+		for(Widget w : getTopWidgets(state)){
+
+			// Only consider enabled and non-blocked widgets
+			if(w.get(Enabled, true) && !w.get(Blocked, false)){
+
+				// Do not build actions for widgets on the blacklist
+				// The blackListed widgets are those that have been filtered during the SPY mode with the
+				//CAPS_LOCK + SHIFT + Click clickfilter functionality.
+				if (!blackListed(w)){
+
+					//For widgets that are:
+					// - clickable
+					// and
+					// - unFiltered by any of the regular expressions in the Filter-tab, or
+					// - whitelisted using the clickfilter functionality in SPY mode (CAPS_LOCK + SHIFT + CNTR + Click)
+					// We want to create actions that consist of left clicking on them
+					if(isClickable(w) && (isUnfiltered(w) || whiteListed(w))) {
+						//Create a left click action with the Action Compiler, and add it to the set of derived actions
+						actions.add(ac.leftClickAt(w));
+					}
+
+					//For widgets that are:
+					// - typeable
+					// and
+					// - unFiltered by any of the regular expressions in the Filter-tab, or
+					// - whitelisted using the clickfilter functionality in SPY mode (CAPS_LOCK + SHIFT + CNTR + Click)
+					// We want to create actions that consist of typing into them
+					if(isTypeable(w) && (isUnfiltered(w) || whiteListed(w))) {
+						//Create a type action with the Action Compiler, and add it to the set of derived actions
+						actions.add(ac.clickTypeInto(w, this.getRandomText(w), true));
+					}
+					//Add sliding actions (like scroll, drag and drop) to the derived actions
+					//method defined below.
+					addSlidingActions(actions,ac,SCROLL_ARROW_SIZE,SCROLL_THICK,w, state);
+				}
+			}
+		}
+		return actions;
 	}
 
 	/**

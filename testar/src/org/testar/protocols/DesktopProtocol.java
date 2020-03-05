@@ -123,7 +123,7 @@ public class DesktopProtocol extends ClickFilterLayerProtocol {
 
         // Derive left-click actions, click and type actions, and scroll actions from
         // top level (highest Z-index) widgets of the GUI:
-        actions = deriveClickTypeScrollActionsFromTopLevelWidgets(actions, system, state);
+        /*actions = deriveClickTypeScrollActionsFromTopLevelWidgets(actions, system, state);
 
         if(actions.size()==0){
             // If the top level widgets did not have any executable widgets, try all widgets:
@@ -131,7 +131,7 @@ public class DesktopProtocol extends ClickFilterLayerProtocol {
             // Derive left-click actions, click and type actions, and scroll actions from
             // all widgets of the GUI:
             actions = deriveClickTypeScrollActionsFromAllWidgetsOfState(actions, system, state);
-        }
+        }*/
 
         //return the set of derived actions
         return actions;

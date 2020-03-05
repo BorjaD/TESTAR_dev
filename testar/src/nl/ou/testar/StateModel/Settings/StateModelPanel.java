@@ -94,6 +94,8 @@ public class StateModelPanel extends JPanel {
     private JButton exportDBbutton = new JButton("Export DB");
     private JButton importDBbutton = new JButton("Import DB");
     private JButton artefactStateModel = new JButton("Artefact");
+    private JButton modelDiffbutton = new JButton("Model Diff");
+
     private Tag<?>[] allStateManagementTags;
     private Tag<?>[] selectedStateManagementTags;
 
@@ -139,6 +141,7 @@ public class StateModelPanel extends JPanel {
         components.add(exportDBbutton);
         components.add(importDBbutton);
         components.add(artefactStateModel);
+        components.add(modelDiffbutton);
 
         // add the components to the panel
         setLayout(null);
@@ -253,7 +256,7 @@ public class StateModelPanel extends JPanel {
         label14.setBounds(330, 280, 300, 27);
         add(label14);
         
-        exportDBbutton.setBounds(330, 285, 150, 27);
+        exportDBbutton.setBounds(330, 285, 100, 27);
         exportDBbutton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -265,7 +268,7 @@ public class StateModelPanel extends JPanel {
         });
         add(exportDBbutton);
         
-        importDBbutton.setBounds(330, 320, 150, 27);
+        importDBbutton.setBounds(450, 285, 100, 27);
         importDBbutton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -277,7 +280,7 @@ public class StateModelPanel extends JPanel {
         });
         add(importDBbutton);
         
-        artefactStateModel.setBounds(500, 320, 75, 27);
+        artefactStateModel.setBounds(330, 320, 100, 27);
         artefactStateModel.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -288,6 +291,17 @@ public class StateModelPanel extends JPanel {
             }
         });
         add(artefactStateModel);
+        
+        modelDiffbutton.setBounds(450, 320, 100, 27);
+        modelDiffbutton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            	ModelDifferenceDialog importDBdialog = new ModelDifferenceDialog(
+            			dataStoreTypeBox.getSelectedItem().toString(), dataStoreServerTextfield.getText());
+            	importDBdialog.setVisible(true);
+            }
+        });
+        add(modelDiffbutton);
 
     }
 
