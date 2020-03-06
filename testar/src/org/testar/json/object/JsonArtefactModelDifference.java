@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
+import org.fruit.Pair;
 import org.fruit.monkey.Main;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.gson.Gson;
@@ -48,12 +49,12 @@ public class JsonArtefactModelDifference {
 	@JsonCreator
 	public static void createModelDifferenceArtefact(List<String> stateModelOne, List<String> stateModelTwo,
 			Set<String> disappearedAbstractStates, Set<String> newAbstractStates,
-			HashMap<String, Set<String>> disappearedActionsDesc, HashMap<String, Set<String>> newActionsDesc) {
+			HashMap<String, Set<Pair<String,String>>> disappearedActions, HashMap<String, Set<Pair<String,String>>> newActions) {
 		
 		ModelDifferenceJsonObject modelDiff = new ModelDifferenceJsonObject(
 				stateModelOne, stateModelTwo,
 				disappearedAbstractStates, newAbstractStates,
-				disappearedActionsDesc, newActionsDesc);
+				disappearedActions, newActions);
 		
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		
