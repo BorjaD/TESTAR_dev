@@ -556,6 +556,10 @@ public class ModelDifferenceManager {
 			String[] HEADER = new String[] {
 					"<!DOCTYPE html>",
 					"<html>",
+					"<style>",
+					".container {display: flex;}",
+					".float {display:inline-block;}",
+					"</style>",
 					"<head>",
 					"<title>TESTAR State Model difference report</title>",
 					"</head>",
@@ -571,15 +575,17 @@ public class ModelDifferenceManager {
 				out.flush();
 			}
 
-			out.println("<h2> Disappeared Abstract States </h2>");
+			out.println("<h2> Disappeared Abstract States: " + disappearedAbstractStates.size() + "</h2>");
+			out.println("<div class=\"container\">");
 			out.flush();
 
 
 			for(String dissState :  disappearedAbstractStates) {
 
+				out.println("<div class=<\"float\">");
+				
 				out.println("<p><img src=\"" + disappearedStatesImages.get(dissState) + "\"></p>");
-				out.flush();
-
+				
 				out.println("<h4> Disappeared Actions of this State, Concrete Description </h4>");
 				out.flush();
 
@@ -594,16 +600,23 @@ public class ModelDifferenceManager {
 						out.flush();
 					}
 				}
+				
+				out.println("</div>");
+				out.flush();
 			}
-
-			out.println("<h2> New Abstract States </h2>");
+			
+			out.println("</div>");
+					
+			out.println("<h2> New Abstract States: " + newAbstractStates.size() + "</h2>");
+			out.println("<div class=\"container\">");
 			out.flush();
 
 
 			for(String newState : newAbstractStates) {
+				
+				out.println("<div class=<\"float\">");
 
 				out.println("<p><img src=\"" + newStatesImages.get(newState) + "\"></p>");
-				out.flush();
 
 				out.println("<h4> New Actions Discovered on this State, Concrete Description </h4>");
 				out.flush();
@@ -620,7 +633,12 @@ public class ModelDifferenceManager {
 						out.flush();
 					}
 				}
+				
+				out.println("</div>");
+				out.flush();
 			}
+			
+			out.println("</div>");
 
 			// Image or Widget Tree comparison
 			out.println("<h2> Specific State changes </h2>");
