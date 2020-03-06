@@ -31,12 +31,13 @@
 
 package nl.ou.testar.StateModel;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,13 +45,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.imageio.ImageIO;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
+import org.fruit.Pair;
 import org.fruit.monkey.Main;
 import org.testar.json.object.JsonArtefactModelDifference;
 
+import com.google.common.collect.Sets;
 import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
@@ -67,71 +71,29 @@ import nl.ou.testar.a11y.reporting.HTMLReporter;
 
 public class ModelDifferenceManager {
 
+	// Identifiers of the State Models we want to compare
+	private static String identifierModelOne;
+	private static String identifierModelTwo;
+
+	// Set Collection with all existing Abstract States of the State Models we want to compare
+	private static Set<String> allAbstractStatesModelOne = new HashSet<>();
+	private static Set<String> allAbstractStatesModelTwo = new HashSet<>();
+
+	// Prepare a Collection to save all disappeared Abstract States
+	private static Set<String> disappearedAbstractStates = new HashSet<>();
+	// Prepare a Map to associate an Abstract State identifier with a visual Screenshot (we will find a Concrete State)  
+	private static HashMap<String, String> disappearedStatesImages = new HashMap<>();
+	// Prepare a Map to associate an Abstract State identifier with all the disappeared Action Description
+	private static HashMap<String, Set<Pair<String, String>>> disappearedActions = new HashMap<>();
+
+	// Prepare a Collection to save all new Abstract States
+	private static Set<String> newAbstractStates = new HashSet<>();
+	// Prepare a Map to associate an Abstract State identifier with a visual Screenshot (we will find a Concrete State)
+	private static HashMap<String, String> newStatesImages = new HashMap<>();
+	// Prepare a Map to associate an Abstract State identifier with all the new Action Description
+	private static HashMap<String, Set<Pair<String, String>>> newActions = new HashMap<>();
+
 	private ModelDifferenceManager() {}
-
-	// orient db instance that will create database sessions
-	private static OrientDB orientDB;
-
-	// orient db configuration object
-	private static Config dbConfig;
-
-	public static void obtainAvailableDatabases(String storeType, String storeServer, String storeDirectory,
-			String root, String passField, JComboBox<String> listDatabases) {
-		dbConfig = new Config();
-		dbConfig.setConnectionType(storeType);
-		dbConfig.setServer(storeServer);
-		dbConfig.setUser(root);
-		dbConfig.setPassword(passField);
-		dbConfig.setDatabaseDirectory(storeDirectory);
-
-		try{
-
-			listDatabases.removeAllItems();
-
-	        String connectionString = dbConfig.getConnectionType() + ":" + (dbConfig.getConnectionType().equals("remote") ?
-	                dbConfig.getServer() : dbConfig.getDatabaseDirectory()) + "/";
-			
-			orientDB = new OrientDB(connectionString, dbConfig.getUser(), dbConfig.getPassword(), OrientDBConfig.defaultConfig());
-
-			if(!orientDB.list().isEmpty())
-				for(String database : orientDB.list())
-					listDatabases.addItem(database);
-
-		} catch(OSecurityAccessException e) {
-			JFrame frame = new JFrame();
-			JOptionPane.showMessageDialog(frame, 
-					" User or password not valid for database: " + listDatabases.getSelectedItem().toString() + 
-					"\n plocal databases do not use 'root' user" + 
-					"\n try with customized user");
-			frame.setAlwaysOnTop(true);
-		} catch(Exception e) {
-			System.out.println(e.getMessage());
-		} finally {
-			orientDB.close();
-		}
-
-	}
-
-	public static void connectionStuff(String storeType, String storeServer, String storeDirectory,
-			String root, String passField, String database) {
-		dbConfig = new Config();
-		dbConfig.setConnectionType(storeType);
-		dbConfig.setServer(storeServer);
-		dbConfig.setUser(root);
-		dbConfig.setPassword(passField);
-		dbConfig.setDatabase(database);
-		dbConfig.setDatabaseDirectory(storeDirectory);
-
-        String connectionString = dbConfig.getConnectionType() + ":" + (dbConfig.getConnectionType().equals("remote") ?
-                dbConfig.getServer() : dbConfig.getDatabaseDirectory()) + "/";
-        
-        orientDB = new OrientDB(connectionString, dbConfig.getUser(), dbConfig.getPassword(), OrientDBConfig.defaultConfig());
-	}
-
-	public static void closeOrientDB() {
-		if(orientDB!=null && orientDB.isOpen())
-			orientDB.close();
-	}
 
 	public static void calculateModelDifference(String storeType, String storeServer, String storeDirectory, String root, String passField,
 			String database, String appNameOne, String appVerOne, String appNameTwo, String appVerTwo) {
@@ -146,41 +108,27 @@ public class ModelDifferenceManager {
 			 * TODO: instead of (for) prepare a better Set difference comparison or
 			 * TODO: prepare OrientDB queries to obtain the difference at DB level
 			 */
-			
-			// Identifiers of the State Models we want to compare
-			String identifierModelOne = abstractStateModelInfo(sessionDB, appNameOne, appVerOne);
-			String identifierModelTwo = abstractStateModelInfo(sessionDB, appNameTwo, appVerTwo);
-			
-			// Set Collection with all existing Abstract States of the State Models we want to compare
-			Set<String> allAbstractStatesModelOne = new HashSet<>(abstractState(sessionDB, identifierModelOne));
-			Set<String> allAbstractStatesModelTwo = new HashSet<>(abstractState(sessionDB, identifierModelTwo));
-			
-			// Map < Abstract State Id, Set < All Abstract Actions > >
-			// Associate all existing Abstract States Identifiers with the Collection of available Abstract Actions on each Abstract State
-			//HashMap<String, Set<String>> stateIdWithAllActionsModelOne = new HashMap<>(abstractAction(sessionDB, identifierModelOne));
-			//HashMap<String, Set<String>> stateIdWithAllActionsModelTwo = new HashMap<>(abstractAction(sessionDB, identifierModelTwo));
 
-			// Prepare a Collection to save all disappeared Abstract States
-			Set<String> disappearedAbstractStates = new HashSet<>();
-			// Prepare a Map to associate an Abstract State identifier with a visual Screenshot (we will find a Concrete State)  
-			HashMap<String, String> disappearedStatesImages = new HashMap<>();
-			// Prepare a Map to associate an Abstract State identifier with all the disappeared Action Description
-			HashMap<String, Set<String>> disappearedActionsDesc = new HashMap<>();
-			
-			// Prepare a Collection to save all new Abstract States
-			Set<String> newAbstractStates = new HashSet<>();
-			// Prepare a Map to associate an Abstract State identifier with a visual Screenshot (we will find a Concrete State)
-			HashMap<String, String> newStatesImages = new HashMap<>();
-			// Prepare a Map to associate an Abstract State identifier with all the new Action Description
-			HashMap<String, Set<String>> newActionsDesc = new HashMap<>();
+			identifierModelOne = abstractStateModelIdentifier(sessionDB, appNameOne, appVerOne);
+			identifierModelTwo = abstractStateModelIdentifier(sessionDB, appNameTwo, appVerTwo);
+
+			allAbstractStatesModelOne = new HashSet<>(abstractState(sessionDB, identifierModelOne));
+			allAbstractStatesModelTwo = new HashSet<>(abstractState(sessionDB, identifierModelTwo));
+
+			disappearedAbstractStates = new HashSet<>();
+			disappearedStatesImages = new HashMap<>();
+			disappearedActions = new HashMap<>();
+
+			newAbstractStates = new HashSet<>();
+			newStatesImages = new HashMap<>();
+			newActions = new HashMap<>();
 
 			/**
 			 * Check which Abstract States of Model One don't exists at Model Two
 			 * Disappeared Abstract States
 			 */
-			
-			allAbstractStatesModelOne.forEach( abstractStateId -> {
 
+			allAbstractStatesModelOne.forEach( abstractStateId -> {
 				// Only if doesn't exists in the State Model Two
 				if(!allAbstractStatesModelTwo.contains(abstractStateId)) {
 
@@ -189,24 +137,7 @@ public class ModelDifferenceManager {
 					String screenshotPath = screenshotConcreteState(sessionDB, concreteStateId(sessionDB, abstractStateId), "disappearedState");
 					disappearedStatesImages.put(abstractStateId, screenshotPath);
 
-					disappearedActionsDesc.put(abstractStateId, actionDescFromAbstractState(sessionDB, identifierModelOne, abstractStateId));
-					
-					// Update a Description Action Collection with the disappeared, to update the Map disappearedActionsDesc
-					/*stateIdWithAllActionsModelOne.values().iterator().next().stream()
-					.filter( abstractActionId -> { return  abstractActionId != null; })
-					.forEach( abstractActionId -> {
-
-						if(disappearedActionsDesc.get(abstractStateId) == null) {
-							Set<String> descriptions = new HashSet<>();
-							descriptions.add(concreteActionDesc(sessionDB, abstractActionId));
-							disappearedActionsDesc.put(abstractStateId, descriptions);
-						} else {
-							Set<String> descriptions = disappearedActionsDesc.get(abstractStateId);
-							descriptions.add(concreteActionDesc(sessionDB, abstractActionId));
-							disappearedActionsDesc.put(abstractStateId, descriptions);
-						}
-					});*/
-
+					disappearedActions.put(abstractStateId, outgoingActionIdDesc(sessionDB, identifierModelOne, abstractStateId));
 				}
 
 			});
@@ -215,50 +146,27 @@ public class ModelDifferenceManager {
 			 * Check which Abstract States of Model Two don't exists at Model One
 			 * New Abstract States
 			 */
-			
+
 			allAbstractStatesModelTwo.forEach( abstractStateId -> {
-				
 				// Only if doesn't exists in the State Model One
 				if(!allAbstractStatesModelOne.contains(abstractStateId)) {
-					
+
 					newAbstractStates.add(abstractStateId);
-					
+
 					String screenshotPath = screenshotConcreteState(sessionDB, concreteStateId(sessionDB, abstractStateId), "NewState");
 					newStatesImages.put(abstractStateId, screenshotPath);
-					
-					newActionsDesc.put(abstractStateId, actionDescFromAbstractState(sessionDB, identifierModelTwo, abstractStateId));
-					
-					// Update a Description Action Collection with the news, to update the Map newActionsDesc
-					/*stateIdWithAllActionsModelTwo.values().iterator().next().stream()
-					.filter( abstractActionId -> { return  abstractActionId != null; })
-					.forEach( abstractActionId -> {
-						
-						if(newActionsDesc.get(abstractStateId) == null) {
-							Set<String> descriptions = new HashSet<>();
-							descriptions.add(concreteActionDesc(sessionDB, abstractActionId));
-							newActionsDesc.put(abstractStateId, descriptions);
-						} else {
-							Set<String> descriptions = newActionsDesc.get(abstractStateId);
-							descriptions.add(concreteActionDesc(sessionDB, abstractActionId));
-							newActionsDesc.put(abstractStateId, descriptions);
-						}
-						
-					});*/
-					
+
+					newActions.put(abstractStateId, outgoingActionIdDesc(sessionDB, identifierModelTwo, abstractStateId));
 				}
-				
 			});
-			
-			createHTMLreport(
-					disappearedAbstractStates, newAbstractStates,
-					disappearedStatesImages, newStatesImages,
-					disappearedActionsDesc, newActionsDesc);
-			
+
+			createHTMLreport(sessionDB);
+
 			JsonArtefactModelDifference.createModelDifferenceArtefact(
 					Arrays.asList(appNameOne, appVerOne, identifierModelOne),
 					Arrays.asList(appNameTwo, appVerTwo, identifierModelTwo),
 					disappearedAbstractStates, newAbstractStates,
-					disappearedActionsDesc, newActionsDesc);
+					disappearedActions, newActions);
 
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -276,15 +184,15 @@ public class ModelDifferenceManager {
 	 * @param appVer
 	 * @return modelIdentifier
 	 */
-	private static String abstractStateModelInfo(ODatabaseSession sessionDB, String appName, String appVer) {
-		
+	private static String abstractStateModelIdentifier(ODatabaseSession sessionDB, String appName, String appVer) {
+
 		String stmt = "SELECT FROM AbstractStateModel where applicationName = :applicationName and "
 				+ "applicationVersion = :applicationVersion";
-		
+
 		Map<String, Object> params = new HashMap<>();
 		params.put("applicationName", appName);
 		params.put("applicationVersion", appVer);
-		
+
 		OResultSet resultSet = sessionDB.query(stmt, params);
 
 		while (resultSet.hasNext()) {
@@ -311,14 +219,14 @@ public class ModelDifferenceManager {
 	 * @return Collection of Abstract States 
 	 */
 	private static Set<String> abstractState(ODatabaseSession sessionDB, String modelIdentifier) {
-		
+
 		Set<String> abstractStates = new HashSet<>();
-		
+
 		String stmt = "SELECT FROM AbstractState where modelIdentifier = :modelIdentifier";
-		
+
 		Map<String, Object> params = new HashMap<>();
 		params.put("modelIdentifier", modelIdentifier);
-		
+
 		OResultSet resultSet = sessionDB.query(stmt, params);
 
 		while (resultSet.hasNext()) {
@@ -328,7 +236,7 @@ public class ModelDifferenceManager {
 				Optional<OVertex> op = result.getVertex();
 				if (!op.isPresent()) continue;
 				OVertex modelVertex = op.get();
-				
+
 				abstractStates.add(modelVertex.getProperty("stateId"));
 			}
 		}
@@ -336,17 +244,52 @@ public class ModelDifferenceManager {
 
 		return abstractStates;
 	}
-	
+
 	/**
-	 * Return a List of Concrete Actions Description from one AbstractState
+	 * The State we are going from an Action
+	 * 
+	 * @param sessionDB
+	 * @param abstractActionId
+	 * @return
+	 */
+	private static String abstractStateFromAction(ODatabaseSession sessionDB, String abstractActionId) {
+
+		String abstractState = "";
+
+		String stmt = "SELECT FROM AbstractAction where actionId = :abstractActionId";
+
+		Map<String, Object> params = new HashMap<>();
+		params.put("abstractActionId", abstractActionId);
+
+		OResultSet resultSet = sessionDB.query(stmt, params);
+
+		if (resultSet.hasNext()) {
+			OResult result = resultSet.next();
+			// we're expecting a vertex
+			if (result.isEdge()) {
+				Optional<OEdge> op = result.getEdge();
+				if (!op.isPresent()) return "";
+				OEdge modelEdge = op.get();
+
+				return modelEdge.getVertex(ODirection.IN).getProperty("stateId");
+			}
+		}
+		resultSet.close();
+
+		return abstractState;
+	}
+
+	/**
+	 * Return a List of Pairs with Concrete Actions <Id, Description> from one AbstractState
 	 * 
 	 * @param sessionDB
 	 * @param modelIdentifier
 	 * @param abstractStateId
 	 * @return
 	 */
-	private static Set<String> actionDescFromAbstractState(ODatabaseSession sessionDB, String modelIdentifier, String abstractStateId) {
-		Set<String> abstractActions = new HashSet<>();
+	private static Set<Pair<String, String>> outgoingActionIdDesc(ODatabaseSession sessionDB, String modelIdentifier, String abstractStateId) {
+
+		Set<Pair<String, String>> outgoingActionIdDesc = new HashSet<>();
 
 		String stmt = "SELECT FROM AbstractState where modelIdentifier = :modelIdentifier and stateId = :abstractStateId";
 
@@ -361,68 +304,62 @@ public class ModelDifferenceManager {
 			// Abstract State Vertex
 			if (result.isVertex()) {
 				Optional<OVertex> op = result.getVertex();
-				if (!op.isPresent()) return abstractActions;
+				if (!op.isPresent()) return outgoingActionIdDesc;
 				OVertex modelVertex = op.get();
 
 				// Abstract Actions Edges
 				for(OEdge modelEdge : modelVertex.getEdges(ODirection.OUT)) {
 					String abstractActionId = modelEdge.getProperty("actionId");
-					abstractActions.add(concreteActionDesc(sessionDB, abstractActionId));
+					Pair<String,String> pair = new Pair(abstractActionId, concreteActionDesc(sessionDB, abstractActionId));
+					outgoingActionIdDesc.add(pair);
 				}
 			}
 		}
 		resultSet.close();
 
-		return abstractActions;
+		return outgoingActionIdDesc;
 	}
 
 	/**
-	 * Obtain a Map of all existing Abstract Actions of every Abstract State of one State Model using his Identifier
+	 * Return a Map of all Incoming AbstractActions to every AbstractStates
 	 * 
 	 * @param sessionDB
 	 * @param modelIdentifier
-	 * @return Map of all existing Abstract Actions of every Abstract State
+	 * @return
 	 */
-	/* private static HashMap<String, Set<String>> abstractAction(ODatabaseSession sessionDB, String modelIdentifier) {
-		
-		HashMap<String, Set<String>> abstractActions = new HashMap<>();
-		
-		String stmt = "SELECT FROM AbstractAction where modelIdentifier = :modelIdentifier";
-		
+	private static Set<Pair<String,String>> incomingActionsIdDesc(ODatabaseSession sessionDB, String modelIdentifier, String abstractStateId) {
+
+		Set<Pair<String,String>> incomingActionsIdDesc = new HashSet<>();
+
+		String stmt = "SELECT FROM AbstractState where modelIdentifier = :modelIdentifier and stateId = :abstractStateId";
+
 		Map<String, Object> params = new HashMap<>();
 		params.put("modelIdentifier", modelIdentifier);
-		
+		params.put("abstractStateId", abstractStateId);
+
 		OResultSet resultSet = sessionDB.query(stmt, params);
 
-		while (resultSet.hasNext()) {
+		if (resultSet.hasNext()) {
 			OResult result = resultSet.next();
-			// we're expecting a vertex
-			if (result.isEdge()) {
-				Optional<OEdge> op = result.getEdge();
-				if (!op.isPresent()) continue;
-				OEdge modelEdge = op.get();
-				
-				OVertex originAbstractState = modelEdge.getVertex(ODirection.OUT);
-				
-				String stateId = originAbstractState.getProperty("stateId");
-				String actionId = modelEdge.getProperty("actionId");
-				
-				if(abstractActions.get(stateId) == null) {
-					Set<String> actions = new HashSet<>();
-					actions.add(actionId);
-					abstractActions.put(stateId, actions);
-				} else {
-					Set<String> actions = abstractActions.get(stateId);
-					actions.add(actionId);
-					abstractActions.put(stateId, actions);
+			// Abstract State Vertex
+			if (result.isVertex()) {
+				Optional<OVertex> op = result.getVertex();
+				if (!op.isPresent()) return incomingActionsIdDesc;
+				OVertex modelVertex = op.get();
+
+				// Abstract Actions Edges
+				for(OEdge modelEdge : modelVertex.getEdges(ODirection.IN)) {
+					String abstractActionId = modelEdge.getProperty("actionId");
+					Pair<String,String> pair = new Pair(abstractActionId, concreteActionDesc(sessionDB, abstractActionId));
+					incomingActionsIdDesc.add(pair);
 				}
 			}
 		}
 		resultSet.close();
 
-		return abstractActions;
-	}*/
-	
+		return incomingActionsIdDesc;
+	}
+
 	/**
 	 * Obtain the ConcreteAction Description from an Abstract Action Identifier
 	 * 
@@ -431,14 +368,14 @@ public class ModelDifferenceManager {
 	 * @return Concrete Action Description
 	 */
 	private static String concreteActionDesc(ODatabaseSession sessionDB, String abstractActionId) {
-		
+
 		String concreteActionsDescription = "";
-		
+
 		String stmtAbstract = "SELECT FROM AbstractAction WHERE actionId = :actionId";
-		
+
 		Map<String, Object> paramsAbstract = new HashMap<>();
 		paramsAbstract.put("actionId", abstractActionId);
-		
+
 		OResultSet resultSetAbstract = sessionDB.query(stmtAbstract, paramsAbstract);
 
 		if (resultSetAbstract.hasNext()) {
@@ -452,14 +389,14 @@ public class ModelDifferenceManager {
 				try {
 					for(String concreteActionId : (Set<String>) modelEdgeAbstract.getProperty("concreteActionIds"))
 						if(!concreteActionId.isEmpty()) {
-							
+
 							String stmtConcrete = "SELECT FROM ConcreteAction WHERE actionId = :actionId";
-							
+
 							Map<String, Object> paramsConcrete = new HashMap<>();
 							paramsConcrete.put("actionId", concreteActionId);
-							
+
 							OResultSet resultSetConcrete = sessionDB.query(stmtConcrete, paramsConcrete);
-							
+
 							if (resultSetConcrete.hasNext()) {
 								OResult resultConcrete = resultSetConcrete.next();
 								// we're expecting a vertex
@@ -467,20 +404,20 @@ public class ModelDifferenceManager {
 									Optional<OEdge> opConcrete = resultConcrete.getEdge();
 									if (!opConcrete.isPresent()) continue;
 									OEdge modelEdgeConcrete = opConcrete.get();
-									
+
 									concreteActionsDescription = modelEdgeConcrete.getProperty("Desc");
 								}
 							}
-							
+
 							resultSetConcrete.close();
-							
+
 							if(!concreteActionsDescription.isEmpty()) break;
-							
+
 						}
 				}catch (Exception e) {System.out.println("ERROR: ModelDifferenceManager concreteActionIds() ");}
 			}
 		}
-		
+
 		resultSetAbstract.close();
 
 		return concreteActionsDescription;
@@ -494,12 +431,12 @@ public class ModelDifferenceManager {
 	 * @return Concrete State Identifier
 	 */
 	private static String concreteStateId(ODatabaseSession sessionDB, String stateId) {
-		
+
 		String stmt = "SELECT FROM AbstractState WHERE stateId = :stateId LIMIT 1";
-		
+
 		Map<String, Object> params = new HashMap<>();
 		params.put("stateId", stateId);
-		
+
 		OResultSet resultSet = sessionDB.query(stmt, params);
 
 		while (resultSet.hasNext()) {
@@ -532,12 +469,12 @@ public class ModelDifferenceManager {
 	 * @return path of existing screenshot
 	 */
 	private static String screenshotConcreteState(ODatabaseSession sessionDB, String concreteId, String folderName) {
-		
+
 		String stmt = "SELECT FROM ConcreteState WHERE ConcreteIDCustom = :concreteId LIMIT 1";
-		
+
 		Map<String, Object> params = new HashMap<>();
 		params.put("concreteId", concreteId);
-		
+
 		OResultSet resultSet = sessionDB.query(stmt, params);
 
 		while (resultSet.hasNext()) {
@@ -613,9 +550,8 @@ public class ModelDifferenceManager {
 
 	}
 
-	private static void createHTMLreport( Set<String> disappearedAbstractStates, Set<String> newAbstractStates,
-			HashMap<String, String> disappearedStatesImages, HashMap<String, String> newStatesImages, 
-			HashMap<String, Set<String>> disappearedActionsDesc, HashMap<String, Set<String>> newActionsDesc) {
+	private static void createHTMLreport(ODatabaseSession sessionDB) {
+
 		try {
 			String[] HEADER = new String[] {
 					"<!DOCTYPE html>",
@@ -634,48 +570,88 @@ public class ModelDifferenceManager {
 				out.println(s);
 				out.flush();
 			}
-			
+
 			out.println("<h2> Disappeared Abstract States </h2>");
 			out.flush();
-			
-			
+
+
 			for(String dissState :  disappearedAbstractStates) {
 
 				out.println("<p><img src=\"" + disappearedStatesImages.get(dissState) + "\"></p>");
 				out.flush();
-				
+
 				out.println("<h4> Disappeared Actions of this State, Concrete Description </h4>");
 				out.flush();
-				
-				for(String actionDesc : disappearedActionsDesc.get(dissState)) {
-					
-					out.println("<p>" + actionDesc + "</p>");
-					out.flush();
+
+				for(Pair<String,String> action : disappearedActions.get(dissState)) {
+
+					// This if will not happen because Actions are currently State dependent (new State means all Actions are new)
+					if(incomingActionsIdDesc(sessionDB, identifierModelTwo, abstractStateFromAction(sessionDB, action.left())).contains(action)) {
+						out.println("<p style=\"color:green;\">" + action.right() + "</p>");
+						out.flush();
+					} else {
+						out.println("<p style=\"color:red;\">" + action.right() + "</p>");
+						out.flush();
+					}
 				}
 			}
-			
+
 			out.println("<h2> New Abstract States </h2>");
 			out.flush();
-			
-			
+
+
 			for(String newState : newAbstractStates) {
 
 				out.println("<p><img src=\"" + newStatesImages.get(newState) + "\"></p>");
 				out.flush();
-				
+
 				out.println("<h4> New Actions Discovered on this State, Concrete Description </h4>");
 				out.flush();
-				
-				
-				for(String actionDesc : newActionsDesc.get(newState)) {
-					
-					out.println("<p>" + actionDesc + "</p>");
-					out.flush();
+
+
+				for(Pair<String,String> action : newActions.get(newState)) {
+
+					// This if will not happen because Actions are currently State dependent (new State means all Actions are new)
+					if(incomingActionsIdDesc(sessionDB, identifierModelOne, abstractStateFromAction(sessionDB, action.left())).contains(action)) {
+						out.println("<p style=\"color:green;\">" + action.right() + "</p>");
+						out.flush();
+					} else {
+						out.println("<p style=\"color:red;\">" + action.right() + "</p>");
+						out.flush();
+					}
 				}
 			}
-			
+
+			// Image or Widget Tree comparison
+			out.println("<h2> Specific State changes </h2>");
+			out.flush();
+
+			// new States of Model Two to be compared with Model One
+			for(String newStateModelTwo : newAbstractStates) {
+
+				Set<Pair<String, String>> incomingActionsModelTwo = incomingActionsIdDesc(sessionDB, identifierModelTwo, newStateModelTwo);
+
+				for(String dissStateModelOne :  disappearedAbstractStates) {
+
+					Set<Pair<String, String>> incomingActionsModelOne = incomingActionsIdDesc(sessionDB, identifierModelOne, dissStateModelOne);
+
+					if(!Sets.intersection(incomingActionsModelTwo, incomingActionsModelOne).isEmpty()) {
+
+						String diffDisk = getDifferenceImage(disappearedStatesImages.get(dissStateModelOne), dissStateModelOne,
+								newStatesImages.get(newStateModelTwo), newStateModelTwo);
+
+
+						out.println("<p><img src=\"" + disappearedStatesImages.get(dissStateModelOne) + "\">");
+						out.println("<img src=\"" + newStatesImages.get(newStateModelTwo) + "\">");
+						out.println("<img src=\"" + diffDisk + "\"></p>");
+						out.flush();
+					}
+				}
+
+			}
+
 			out.close();
-			
+
 			System.out.println("\n ****************************************************************************************************** \n");
 			System.out.println("TESTAR State Model Difference report created in: " + htmlReportName);
 			System.out.println("\n ****************************************************************************************************** \n");
@@ -686,4 +662,156 @@ public class ModelDifferenceManager {
 		}
 	}
 
+	// https://stackoverflow.com/questions/25022578/highlight-differences-between-images
+	private static String getDifferenceImage(String img1Disk, String idImg1, String img2Disk, String idImg2) {
+		try {
+
+			BufferedImage img1 = ImageIO.read(new File(img1Disk));
+			BufferedImage img2 = ImageIO.read(new File(img2Disk));
+
+			int width1 = img1.getWidth(); // Change - getWidth() and getHeight() for BufferedImage
+			int width2 = img2.getWidth(); // take no arguments
+			int height1 = img1.getHeight();
+			int height2 = img2.getHeight();
+			if ((width1 != width2) || (height1 != height2)) {
+				System.err.println("Error: Images dimensions mismatch");
+				System.exit(1);
+			}
+
+			// NEW - Create output Buffered image of type RGB
+			BufferedImage outImg = new BufferedImage(width1, height1, BufferedImage.TYPE_INT_RGB);
+
+			// Modified - Changed to int as pixels are ints
+			int diff;
+			int result; // Stores output pixel
+			for (int i = 0; i < height1; i++) {
+				for (int j = 0; j < width1; j++) {
+					int rgb1 = img1.getRGB(j, i);
+					int rgb2 = img2.getRGB(j, i);
+					int r1 = (rgb1 >> 16) & 0xff;
+					int g1 = (rgb1 >> 8) & 0xff;
+					int b1 = (rgb1) & 0xff;
+					int r2 = (rgb2 >> 16) & 0xff;
+					int g2 = (rgb2 >> 8) & 0xff;
+					int b2 = (rgb2) & 0xff;
+					diff = Math.abs(r1 - r2); // Change
+					diff += Math.abs(g1 - g2);
+					diff += Math.abs(b1 - b2);
+					diff /= 3; // Change - Ensure result is between 0 - 255
+					// Make the difference image gray scale
+					// The RGB components are all the same
+					result = (diff << 16) | (diff << 8) | diff;
+					outImg.setRGB(j, i, result); // Set result
+				}
+			}
+
+			// Now save the image on disk
+
+			if (!Main.outputDir.substring(Main.outputDir.length() - 1).equals(File.separator)) {
+				Main.outputDir += File.separator;
+			}
+
+			// see if we have a directory for the screenshots yet
+			File screenshotDir = new File(Main.outputDir + "ModelDiff" + /*File.separator + folderName +*/ File.separator);
+
+			if (!screenshotDir.exists()) {
+				screenshotDir.mkdir();
+			}
+
+			// save the file to disk
+			File screenshotFile = new File( screenshotDir, "diff_"+ idImg1 + "_" + idImg2 + ".png");
+			if (screenshotFile.exists()) {
+				try {
+					return screenshotFile.getCanonicalPath();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			FileOutputStream outputStream = new FileOutputStream(screenshotFile.getCanonicalPath());
+
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ImageIO.write(outImg, "png", baos);
+			byte[] bytes = baos.toByteArray();
+
+			outputStream.write(bytes);
+			outputStream.flush();
+			outputStream.close();
+
+			return screenshotFile.getCanonicalPath();
+
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return "";
+	}
+
+
+	// orient db instance that will create database sessions
+	private static OrientDB orientDB;
+
+	// orient db configuration object
+	private static Config dbConfig;
+
+	public static void obtainAvailableDatabases(String storeType, String storeServer, String storeDirectory,
+			String root, String passField, JComboBox<String> listDatabases) {
+		dbConfig = new Config();
+		dbConfig.setConnectionType(storeType);
+		dbConfig.setServer(storeServer);
+		dbConfig.setUser(root);
+		dbConfig.setPassword(passField);
+		dbConfig.setDatabaseDirectory(storeDirectory);
+
+		try{
+
+			listDatabases.removeAllItems();
+
+			String connectionString = dbConfig.getConnectionType() + ":" + (dbConfig.getConnectionType().equals("remote") ?
+					dbConfig.getServer() : dbConfig.getDatabaseDirectory()) + "/";
+
+			orientDB = new OrientDB(connectionString, dbConfig.getUser(), dbConfig.getPassword(), OrientDBConfig.defaultConfig());
+
+			if(!orientDB.list().isEmpty())
+				for(String database : orientDB.list())
+					listDatabases.addItem(database);
+
+		} catch(OSecurityAccessException e) {
+			JFrame frame = new JFrame();
+			JOptionPane.showMessageDialog(frame, 
+					" User or password not valid for database: " + listDatabases.getSelectedItem().toString() + 
+					"\n plocal databases do not use 'root' user" + 
+					"\n try with customized user");
+			frame.setAlwaysOnTop(true);
+		} catch(Exception e) {
+			System.out.println(e.getMessage());
+		} finally {
+			orientDB.close();
+		}
+
+	}
+
+	public static void connectionStuff(String storeType, String storeServer, String storeDirectory,
+			String root, String passField, String database) {
+		dbConfig = new Config();
+		dbConfig.setConnectionType(storeType);
+		dbConfig.setServer(storeServer);
+		dbConfig.setUser(root);
+		dbConfig.setPassword(passField);
+		dbConfig.setDatabase(database);
+		dbConfig.setDatabaseDirectory(storeDirectory);
+
+		String connectionString = dbConfig.getConnectionType() + ":" + (dbConfig.getConnectionType().equals("remote") ?
+				dbConfig.getServer() : dbConfig.getDatabaseDirectory()) + "/";
+
+		orientDB = new OrientDB(connectionString, dbConfig.getUser(), dbConfig.getPassword(), OrientDBConfig.defaultConfig());
+	}
+
+	public static void closeOrientDB() {
+		if(orientDB!=null && orientDB.isOpen())
+			orientDB.close();
+	}
 }
