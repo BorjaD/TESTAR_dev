@@ -280,7 +280,7 @@ public class ModelDifferenceManager {
 	}
 
 	/**
-	 * Return a List of Pairs with Concrete Actions <Id, Description> from one AbstractState
+	 * Return a List of Pairs with Concrete Actions <Id, Description> from one Specific AbstractState
 	 * 
 	 * @param sessionDB
 	 * @param modelIdentifier
@@ -321,7 +321,7 @@ public class ModelDifferenceManager {
 	}
 
 	/**
-	 * Return a Map of all Incoming AbstractActions to every AbstractStates
+	 * Return a Map of all Incoming AbstractActions to one Specific AbstractState
 	 * 
 	 * @param sessionDB
 	 * @param modelIdentifier
@@ -630,11 +630,13 @@ public class ModelDifferenceManager {
 			for(String newStateModelTwo : newAbstractStates) {
 
 				Set<Pair<String, String>> incomingActionsModelTwo = incomingActionsIdDesc(sessionDB, identifierModelTwo, newStateModelTwo);
-
+				incomingActionsModelTwo.remove(new Pair<String, String>(null,""));
+				
 				for(String dissStateModelOne :  disappearedAbstractStates) {
 
 					Set<Pair<String, String>> incomingActionsModelOne = incomingActionsIdDesc(sessionDB, identifierModelOne, dissStateModelOne);
-
+					incomingActionsModelOne.remove(new Pair<String, String>(null,""));
+					
 					if(!Sets.intersection(incomingActionsModelTwo, incomingActionsModelOne).isEmpty()) {
 
 						String diffDisk = getDifferenceImage(disappearedStatesImages.get(dissStateModelOne), dissStateModelOne,
@@ -644,6 +646,9 @@ public class ModelDifferenceManager {
 						out.println("<p><img src=\"" + disappearedStatesImages.get(dissStateModelOne) + "\">");
 						out.println("<img src=\"" + newStatesImages.get(newStateModelTwo) + "\">");
 						out.println("<img src=\"" + diffDisk + "\"></p>");
+						
+						out.println("<p style=\"color:blue;\">" + "We have reached this State with Action: " + Sets.intersection(incomingActionsModelTwo, incomingActionsModelOne) + "</p>");
+						
 						out.flush();
 					}
 				}
