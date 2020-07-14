@@ -28,3 +28,5 @@ jobs:
       run: ./gradlew installDist
     - name: Run desktop_generic protocol with TESTAR
       run: ./gradlew runTestDesktopGeneric
+    - name: Run desktop_generic protocol that contains SuspiciousTitle with TESTAR
+      run: ./gradlew runTestDesktopGenericError
