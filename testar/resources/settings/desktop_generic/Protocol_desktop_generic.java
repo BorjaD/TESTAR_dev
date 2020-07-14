@@ -103,7 +103,16 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 	 */
 	@Override
 	protected State getState(SUT system) throws StateBuildException{
-		return super.getState(system);
+		State state = super.getState(system);
+		
+		for(Widget w : state) {
+			System.out.println("Widget : " + w.get(Tags.Title, ""));
+			if(w.get(Tags.Shape, null) != null) {
+				System.out.println("------ with Shape: " + w.get(Tags.Shape, null));
+			}
+		}
+		
+		return state;
 	}
 
 	/**

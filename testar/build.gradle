@@ -223,5 +223,5 @@ task runTestDesktopGenericError(type: Exec, dependsOn:'installDist') {
     group = 'custom_testar'
     description ='runTestDesktopGenericError'
     workingDir 'target/install/testar/bin'
-    commandLine 'cmd', '/c', 'testar sse=desktop_generic ApplicationName="notepad" SuspiciousTitles=".[fF]ormat.|.[fF]ormato." ShowVisualSettingsDialogOnStartup=false Mode=Generate SUTConnector=COMMAND_LINE SUTConnectorValue="C:\\\\Windows\\\\System32\\\\notepad.exe" Sequences=1 SequenceLength=2'
+    commandLine 'cmd', '/c', 'testar sse=desktop_generic ApplicationName="notepad" SuspiciousTitles=".*[fF]ormat.*|.*[fF]ormato.*" ShowVisualSettingsDialogOnStartup=false Mode=Generate SUTConnector=COMMAND_LINE SUTConnectorValue="C:\\\\Windows\\\\System32\\\\notepad.exe" Sequences=1 SequenceLength=2'
 }
