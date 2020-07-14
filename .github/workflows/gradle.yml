@@ -26,7 +26,5 @@ jobs:
       run: ./gradlew build
     - name: Prepare installed distribution of TESTAR with Gradle
       run: ./gradlew installDist
-    - name: Prepare zip distribution of TESTAR with Gradle
-      run: ./gradlew distZip
     - name: Run desktop_generic protocol with TESTAR
       run: ./gradlew runTestDesktopGeneric
