@@ -18,6 +18,7 @@ import org.fruit.alayer.Tags;
 import javax.annotation.Nullable;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 public class ModelManagerReinforcementLearning extends ModelManager implements StateModelManager  {
@@ -45,24 +46,28 @@ public class ModelManagerReinforcementLearning extends ModelManager implements S
 
         super.notifyNewStateReached(newState, actions);
         
-    	HashMap<String, Action> surfaceActions = new HashMap<>();
-    	actions.forEach(a -> surfaceActions.put(a.get(Tags.AbstractIDCustom), a));
-    	
-    	if (currentAbstractState == null) {
+        if (currentAbstractState == null) {
     		return;
     	}
-    	
+        
+        HashSet<Action> newActions = new HashSet<>();
+        
+    	HashMap<String, Action> surfaceActions = new HashMap<>();
+    	actions.forEach(a -> surfaceActions.put(a.get(Tags.AbstractIDCustom), a));
+        
     	for (AbstractAction modelAbstractAction : currentAbstractState.getActions()) {
-    		
+        
 			if(modelAbstractAction.getAttributes().get(RLTags.HalfValue, null) != null 
 					&& surfaceActions.containsKey(modelAbstractAction.getActionId())) {
-				
+
 				Action ia = surfaceActions.get(modelAbstractAction.getActionId());
 				ia.set(RLTags.HalfValue, modelAbstractAction.getAttributes().get(RLTags.HalfValue));
-				
+				newActions.add(ia);
 			}
 			
 		}
+    	
+    	if(!newActions.isEmpty()) {actions = newActions;}
     	
         for(Action a : actions)
         	getAbstractActionQValue(a);
