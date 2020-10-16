@@ -73,6 +73,7 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 	protected void initialize(Settings settings){
 		super.initialize(settings);
 		htmlDifference = new HTMLDifference();		// ENFOQUE 4
+		System.out.println("*** NEW EXECUTION ***");
 	}
 
 	/**
@@ -207,97 +208,139 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 		/*
 		// Si una acción no tiene tag ActionGroup asociado y si pertenece a un gupo de ActionGroup, asignar un tag ActionGroup
 		for(Action a : actions) {
-			ActionTags.ActionGroupType actionGroup = a.get(ActionTags.ActionGroup);
+			ActionTags.ActionGroupType actionGroup = a.get(ActionTags.ActionGroup, null);
 			if(actionGroup == null) {
 				Role actionRole = a.get(Tags.Role);
 				String actionRoleStr = actionRole.toString();
 				switch(actionRoleStr) {
 					case "UIAWidget":
 						actionGroup = ActionGroupType.UIAWidget;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAAppBar":
 						actionGroup = ActionGroupType.UIAAppBar;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAButton":
 						actionGroup = ActionGroupType.UIAButton;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIACalendar":
 						actionGroup = ActionGroupType.UIACalendar;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIACheckBox":
 						actionGroup = ActionGroupType.UIACheckBox;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAComboBox":
 						actionGroup = ActionGroupType.UIAComboBox;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIACustomControl":
 						actionGroup = ActionGroupType.UIACustomControl;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIADataGrid":
 						actionGroup = ActionGroupType.UIADataGrid;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIADataItem":
 						actionGroup = ActionGroupType.UIADataItem;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIADocument":
 						actionGroup = ActionGroupType.UIADocument;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAEdit":
 						actionGroup = ActionGroupType.UIAEdit;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAGroup":
 						actionGroup = ActionGroupType.UIAGroup;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAHeader":
 						actionGroup = ActionGroupType.UIAHeader;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAHeaderItem":
 						actionGroup = ActionGroupType.UIAHeaderItem;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAHyperlink":
 						actionGroup = ActionGroupType.UIAHyperlink;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAImage":
 						actionGroup = ActionGroupType.UIAImage;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAList":
 						actionGroup = ActionGroupType.UIAList;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAListItem":
 						actionGroup = ActionGroupType.UIAListItem;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAMenuBar":
 						actionGroup = ActionGroupType.UIAMenuBar;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAMenu":
 						actionGroup = ActionGroupType.UIAMenu;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAMenuItem":
 						actionGroup = ActionGroupType.UIAMenuItem;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAPane":
 						actionGroup = ActionGroupType.UIAPane;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAProgressBar":
 						actionGroup = ActionGroupType.UIAProgressBar;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIARadioButton":
 						actionGroup = ActionGroupType.UIARadioButton;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAScrollBar":
 						actionGroup = ActionGroupType.UIAScrollBar;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIASemanticZoom":
 						actionGroup = ActionGroupType.UIASemanticZoom;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIASeparator":
 						actionGroup = ActionGroupType.UIASeparator;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIASlider":
 						actionGroup = ActionGroupType.UIASlider;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIASpinner":
 						actionGroup = ActionGroupType.UIASpinner;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIASplitButton":
 						actionGroup = ActionGroupType.UIASplitButton;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAStatusBar":
 						actionGroup = ActionGroupType.UIAStatusBar;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIATabControl":
 						actionGroup = ActionGroupType.UIATabControl;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIATabItem":
 						actionGroup = ActionGroupType.UIATabItem;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIATable":
 						actionGroup = ActionGroupType.UIATable;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAText":
 						actionGroup = ActionGroupType.UIAText;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAThumb":
 						actionGroup = ActionGroupType.UIAThumb;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIATitleBar":
 						actionGroup = ActionGroupType.UIATitleBar;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAToolBar":
 						actionGroup = ActionGroupType.UIAToolBar;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAToolTip":
 						actionGroup = ActionGroupType.UIAToolTip;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIATree":
 						actionGroup = ActionGroupType.UIATree;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIATreeItem":
 						actionGroup = ActionGroupType.UIATreeItem;
+						a.set(ActionTags.ActionGroup, actionGroup);
 					case "UIAWindow":
 						actionGroup = ActionGroupType.UIAWindow;
-					// ...
+						a.set(ActionTags.ActionGroup, actionGroup);
 				}
+				
 			}
 			
 			// Asignación de ZIndex
@@ -313,7 +356,7 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 			// 4)			Si alguna acción secundaria tiene un valor, asignar a la acción inicial el valor de QLearning de la acción secundaria.
 			// 5)			Si ninguna acción secundaria tiene un valor, asignar a la acción inicial el valor más alto (1) a su Tag QLearning.
 			// 6)		Si no existen, asignar a la acción inicial el valor más alto (1) a su Tag QLearning.
-			double actionQLearning = a.get(ActionTags.QLearning);
+			double actionQLearning = a.get(ActionTags.QLearning, 0.0);
 			if(actionGroup == null && actionQLearning == 0) {										// 1)
 				a.set(ActionTags.QLearning, 1.0);
 			}
@@ -338,39 +381,43 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 		
 		
 		// ENFOQUE 3: Dar una mayor recompensa a las acciones que produzcan un mayor cambio en el programa
-		/*
-		// Número de widgets que siguen estando tras ejecutar la acción
-		int persistentWidgetNum = 0;
-		for(Widget w : state) {
-			String wID = w.get(Tags.ConcreteIDCustom);
-			for (Widget lw : latestState) {
-				String lwID = lw.get(Tags.ConcreteIDCustom);
-				if(wID == lwID) persistentWidgetNum ++;
-			}
-		}
-		
-		double persistentDecrement = persistentWidgetNum * 0.02;
-		double newQL = greaterThanZero(lastActionExecuted.get(ActionTags.QLearning) - persistentDecrement);
-		lastActionExecuted.set(ActionTags.QLearning, newQL);
 		
 		// Número de widgets en el estado previo y en el actual
 		int numWidgetsBefore = latestState.childCount();
 		int numWidgetsNow = state.childCount();
+		
+		for (Action a : actions) {
+			if(a.get(ActionTags.QLearning, 0.0) == 0.0) a.set(ActionTags.QLearning, 1.0);
+		}
+		
 				
-		// Si no existe widget tree anterior, no hacer nada.
-		if(numWidgetsBefore > 0) {
+		// Si no existe widget tree anterior, no hacer nada
+		if(numWidgetsBefore > 1) {
+			// Número de widgets que siguen estando tras ejecutar la acción
+			int persistentWidgetNum = 0;
+			for(Widget w : state) {
+				String wID = w.get(Tags.ConcreteIDCustom);
+				for (Widget lw : latestState) {
+					String lwID = lw.get(Tags.ConcreteIDCustom);
+					if(wID == lwID) persistentWidgetNum ++;
+				}
+			}
+			
+			double persistentDecrement = persistentWidgetNum * 0.02;
+			double newQL = greaterThanZero(lastActionExecuted.get(ActionTags.QLearning, 0.0) - persistentDecrement);
+			lastActionExecuted.set(ActionTags.QLearning, newQL);
+			
 			if(numWidgetsBefore < numWidgetsNow) {
-				double newQLearningValue = lastActionExecuted.get(ActionTags.QLearning);
+				double newQLearningValue = lastActionExecuted.get(ActionTags.QLearning, 0.0);
 				newQLearningValue += (numWidgetsNow - numWidgetsBefore) / numWidgetsBefore;
 				lastActionExecuted.set(ActionTags.QLearning, newQLearningValue);
 			}
 			if(numWidgetsBefore > numWidgetsNow) {
-				double newQLearningValue = lastActionExecuted.get(ActionTags.QLearning);
+				double newQLearningValue = lastActionExecuted.get(ActionTags.QLearning, 0.0);
 				newQLearningValue = greaterThanZero(newQLearningValue - (numWidgetsNow / numWidgetsBefore));
 				lastActionExecuted.set(ActionTags.QLearning, newQLearningValue);
 			}
 		}
-		*/
 		
 		
 		
@@ -379,6 +426,10 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 		// Comparar la imagen de los estados [state 1] y [state 2], y ver cuántos píxeles han cambiado.
 		// La recompensa de (a) será mayor cuantos más píxeles cambien entre [state 1] y [state 2].
 		// Usar la información de "htmlDifference"
+		/*
+		for (Action a : actions) {
+			if(a.get(ActionTags.QLearning, 0.0) == 0.0) a.set(ActionTags.QLearning, 1.0);
+		}
 		
 		try {
 			BufferedImage diffScreanshot = ImageIO.read(new File(differenceScreenshot));			
@@ -392,19 +443,25 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 			    }
 			}
 			double diffPxPercentage = differentPixels / totalPixels;
-			System.out.println("Totales: " + totalPixels);
-			System.out.println("Diferentes: " + differentPixels);
-			System.out.println("Porcentaje: " + diffPxPercentage);
 			
-			//double newQLearning = lastActionExecuted.get(ActionTags.QLearning, 0.0) + diffPxPercentage;
-			//lastActionExecuted.set(ActionTags.QLearning, newQLearning);
-
-			System.out.println("Reward: " + lastActionExecuted.get(ActionTags.QLearning));
+			System.out.println("*********");
+			System.out.println("Totales actuales: " + totalPixels);
+			System.out.println("Diferentes: " + differentPixels);
+			System.out.println("Porcentaje (0..1): " + diffPxPercentage);
+			System.out.println("*********");
+			
+			int numWidgetsBefore = latestState.childCount();
+			if(numWidgetsBefore > 1) {
+			double newQLearning = lastActionExecuted.get(ActionTags.QLearning, 0.0) + diffPxPercentage;
+				lastActionExecuted.set(ActionTags.QLearning, newQLearning);
+				System.out.println("Reward: " + lastActionExecuted.get(ActionTags.QLearning));
+				System.out.println();
+			}
 			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+		*/
 		
 		// <-- **
 
@@ -435,20 +492,32 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 		// ENFOQUE 2: Decrecimiento iterativo de los QValues
 		/*
 		//Seleccionar la acción con el mayor valor en su tag QLearning.
-		Action maxAction = null;
+		int maxActionNumber = 1;
+		int iteration = 1;
 		double maxQLearning = 0.0;
+		double actionQLearning = 0.0;
+		
 		for(Action a : actions) {
-			double actionQLearning = a.get(ActionTags.QLearning);
-			if(actionQLearning > maxQLearning)
-				maxAction = a;
+			actionQLearning = a.get(ActionTags.QLearning, 0.0);
+			if(actionQLearning > maxQLearning) {
+				maxActionNumber = iteration;
+				maxQLearning = actionQLearning;
+			}
+			iteration ++;
+			
+			System.out.println(a.get(Tags.Desc) + " ---> " + actionQLearning);
 		}
 		
 		// Actualizar los valores de QLearning de las acciones. El valor en acciones de un ActionGroup será menor
 		// a medida que se ejecuten acciones de dicho ActionGroup.
-		if (maxAction != null) {
-			double newQL = greaterThanZero(maxAction.get(ActionTags.QLearning) - 0.05);
-			maxAction.set(ActionTags.QLearning, newQL);
-			return maxAction;
+		iteration = 1;
+		for(Action a : actions) {
+			if(iteration == maxActionNumber) {
+				double newQL = greaterThanZero(a.get(ActionTags.QLearning, 0.0) - 0.05);
+				a.set(ActionTags.QLearning, newQL);
+				return a;
+			}
+			iteration ++;
 		}
 		*/
 		
@@ -463,13 +532,15 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 			double actionQLearning = a.get(ActionTags.QLearning, 0.0);
 			if(actionQLearning > maxQLearning)
 				maxAction = a;
+			
+			System.out.println(a.get(Tags.Desc) + " ---> " + actionQLearning);
 		}
 		
 		if (maxAction != null) {
 			lastActionExecuted = maxAction;
 			return maxAction;
 		}
-				
+		
 		
 		// <-- **
 		
