@@ -73,16 +73,17 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 	String differenceScreenshot;
 	
 	// ENFOQUE 3
-	//int numWidgetsBefore = 0;
-	//int numWidgetsNow = 0;
+	int numWidgetsBefore = 0;
+	int numWidgetsNow = 0;
 
 	List<String> actionNamesGlobalList = new ArrayList<String>();
 	List<String> actionGroupsGlobalList = new ArrayList<String>();
-	List<Integer> zIndexesGlobalList = new ArrayList<Integer>();
+	List<Double> zIndexesGlobalList = new ArrayList<Double>();
 	List<Double> qLearningsGlobalList = new ArrayList<Double>();
 
 	// ENFOQUE 3
 	List<String> lastStateActionsList = new ArrayList<String>();
+	boolean enfoque3o4 = false;
 	
 	
 	/**
@@ -230,20 +231,16 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 		// Si una acción no tiene tag ActionGroup asociado y si pertenece a un gupo de ActionGroup, asignar un tag ActionGroup
 		for(Action a : actions) {
 			System.out.println("NEW ACTION DETECTED:");
-			System.out.println("Name: " + a.get(Tags.OriginWidget).get(Tags.Desc));
 			
 			updateListsBefore(a);
 			
-			
-			// Asignación de un ActionGroup
+			// Asignación de ActionGroup
 			ActionTags.ActionGroupType actionGroup = a.get(ActionTags.ActionGroup, null);
 			if(actionGroup == null) {
 				Role actionRole = a.get(Tags.OriginWidget).get(Tags.Role);
 				String actionRoleStr = actionRole.toString();
 				setActionGroup(actionRoleStr, a);
 			}
-
-			
 			
 			// Asignación de ZIndex
 			if(a.get(ActionTags.ZIndex, 0) == 0) {
@@ -254,28 +251,30 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 				}
 			}
 			
-					
-			// 1) Si la acción no tiene ActionGroup y tampoco un valor en su tag QLearning, asignar el valor más alto (1) a su Tag QLearning.
-			// 2) Si la acción tiene un ActionGroup pero no un valor en su tag QLearning, comprobar si existen acciones secundarias con su mismo Action Group y ZIndex.
-			// 3)		Si existen, comprobar si alguna de las acciones secundarias tiene un valor en su tag QLearning.
-			// 4)			Si alguna acción secundaria tiene un valor, asignar a la acción inicial el valor de QLearning de la acción secundaria.
-			// 5)			Si ninguna acción secundaria tiene un valor, asignar a la acción inicial el valor más alto (1) a su Tag QLearning.
-			// 6)		Si no existen, asignar a la acción inicial el valor más alto (1) a su Tag QLearning.
+			// Asignación de QLearning
 			double actionQLearning = a.get(ActionTags.QLearning, 0.0);
 			if(actionGroup == null && actionQLearning == 0.0) {										// 1)
 				a.set(ActionTags.QLearning, 1.0);
 			}
+			
+			// 1) Si la acción no tiene ActionGroup y tampoco un valor en su tag QLearning, asignar el valor más alto (1) a su Tag QLearning.
+			// 2) Si la acción tiene un ActionGroup pero no un valor en su tag QLearning, comprobar si existen acciones en las listas con su mismo Action Group y ZIndex.
+			// 3)		Si existen, comprobar si alguna de las acciones de las listas tienen un valor en su tag QLearning.
+			// 4)			Si alguna acción de las listas tiene un valor, asignar a la acción inicial el valor de QLearning de la acción de las listas.
+			// 5)			Si ninguna acción de las listas tiene un valor, asignar a la acción inicial el valor más alto (1) a su Tag QLearning.
+			// 6)		Si no existen, asignar a la acción inicial el valor más alto (1) a su Tag QLearning.
 			if(actionGroup != null && actionQLearning == 0.0) {										// 2)
 				double auxQValue = 0.0;
-				for (Action a2 : actions) {
+				for (int i = 0; i < actionGroupsGlobalList.size(); i ++) {
 					String aActionGroup = a.get(ActionTags.ActionGroup, null).toString();
-					String a2ActionGroup = a2.get(ActionTags.ActionGroup, null).toString();
+					String a2ActionGroup = actionGroupsGlobalList.get(i);
 					if(a2ActionGroup != null && aActionGroup != null) {
-						int aZIndex = a.get(ActionTags.ZIndex, null);
-						int a2ZIndex = a2.get(ActionTags.ZIndex, null);
+						double aZIndex = a.get(ActionTags.ZIndex, null);
+						double a2ZIndex = zIndexesGlobalList.get(i);
 						if(a2ActionGroup.equals(aActionGroup) && aZIndex == a2ZIndex) {
-							if ((a2.get(ActionTags.QLearning, 0.0) > 0.0) && (a2.get(ActionTags.QLearning, 0.0) < auxQValue)) {									// 3)
-								auxQValue = a2.get(ActionTags.QLearning);								// 4)
+							double a2QLearning = qLearningsGlobalList.get(i);
+							if ((a2QLearning > 0.0) && (a2QLearning < auxQValue)) {									// 3)
+								auxQValue = a2QLearning;													// 4)
 							}
 						}
 					}
@@ -287,7 +286,7 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 					a.set(ActionTags.QLearning, 1.0);
 				}
 			}
-			System.out.println("QValue = " + a.get(ActionTags.QLearning, 0.0));
+			System.out.println("Name: " + a.get(Tags.OriginWidget).get(Tags.Desc) + "\t\t QLearning = " + a.get(ActionTags.QLearning, 0.0));
 		}
 		
 		
@@ -295,13 +294,15 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 		// ENFOQUE 3: Dar una mayor recompensa a las acciones que produzcan un mayor cambio en el programa
 		// Número de widgets en el estado previo y en el actual
 		/*
+		enfoque3o4 = true;
+		
 		numWidgetsNow = actions.size();
 				
 		System.out.println("*** numWidgetsBefore: " + numWidgetsBefore);
 		System.out.println("*** numWidgetsNow: " + numWidgetsNow);
 		
 		for (Action a : actions) {			
-			updateListsBeforeE34(a);
+			updateListsBefore(a);
 			
 			// Inicialización del valor de recompensa a 1.0
 			if(a.get(ActionTags.QLearning, 0.0) == 0.0) a.set(ActionTags.QLearning, 1.0);
@@ -318,9 +319,11 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 				double newQLearningValue = qLearningsGlobalList.get(index);
 				
 				if(numWidgetsBefore < numWidgetsNow) {
-					newQLearningValue = newQLearningValue - persistentDecrement + ((numWidgetsNowDouble - numWidgetsBeforeDouble) / numWidgetsBeforeDouble);
+					newQLearningValue = newQLearningValue - persistentDecrement +
+							((numWidgetsNowDouble - numWidgetsBeforeDouble) / numWidgetsBeforeDouble);
 				} else if(numWidgetsBefore > numWidgetsNow) {
-					newQLearningValue = greaterThanZero(newQLearningValue - persistentDecrement - (numWidgetsNowDouble / numWidgetsBeforeDouble));
+					newQLearningValue = greaterThanZero(newQLearningValue - persistentDecrement -
+							(numWidgetsNowDouble / numWidgetsBeforeDouble));
 				} else {
 					newQLearningValue = greaterThanZero(newQLearningValue - persistentDecrement);
 				}
@@ -337,41 +340,40 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 		// La recompensa de (a) será mayor cuantos más píxeles cambien entre [state 1] y [state 2].
 		// Usar la información de "htmlDifference"
 		/*
+		enfoque3o4 = true;
+		
 		for (Action a : actions) {
-			updateListsBeforeE34(a);
+			updateListsBefore(a);
 			if(a.get(ActionTags.QLearning, 0.0) == 0.0) a.set(ActionTags.QLearning, 1.0);
 		}
 		
 		if(lastActionExecutedName != "") {
 			int index = actionNamesGlobalList.indexOf(lastActionExecutedName);
 			double qLearningValue = qLearningsGlobalList.get(index);
-			
-			if(qLearningValue == 1.0) {
-				try {
-					BufferedImage diffScreanshot = ImageIO.read(new File(differenceScreenshot));		
+			try {
+				BufferedImage diffScreanshot = ImageIO.read(new File(differenceScreenshot));		
 					
-					double totalPixels = diffScreanshot.getWidth() * diffScreanshot.getHeight();
-					double differentPixels = 0;
-					int[] pixelsArray = diffScreanshot.getRGB(0, 0, diffScreanshot.getWidth(), diffScreanshot.getHeight(), null, 0, diffScreanshot.getWidth());
-					for (int i = 0; i < totalPixels; i++) {
-					    if (pixelsArray[i] != Color.Black.argb32()) {
-					    	differentPixels ++;
-					    }
-					}
-					double diffPxPercentage = differentPixels / totalPixels;
-					
-					System.out.println("*********");
-					System.out.println("Totales actuales: " + totalPixels);
-					System.out.println("Diferentes: " + differentPixels);
-					System.out.println("Porcentaje (0..1): " + diffPxPercentage);
-					System.out.println("*********");
-					
-					qLearningValue += diffPxPercentage;
-					qLearningsGlobalList.set(index, qLearningValue);
-					
-				} catch (IOException e) {
-					e.printStackTrace();
+				double totalPixels = diffScreanshot.getWidth() * diffScreanshot.getHeight();
+				double differentPixels = 0;
+				int[] pixelsArray = diffScreanshot.getRGB(0, 0, diffScreanshot.getWidth(), diffScreanshot.getHeight(), null, 0, diffScreanshot.getWidth());
+				for (int i = 0; i < totalPixels; i++) {
+				    if (pixelsArray[i] != Color.Black.argb32()) {
+				    	differentPixels ++;
+				    }
 				}
+				double diffPxPercentage = differentPixels / totalPixels;
+					
+				System.out.println("*********");
+				System.out.println("Totales actuales: " + totalPixels);
+				System.out.println("Diferentes: " + differentPixels);
+				System.out.println("Proporcion (0..1): " + diffPxPercentage);
+				System.out.println("*********");
+					
+				qLearningValue += diffPxPercentage;
+				qLearningsGlobalList.set(index, qLearningValue);
+					
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 		*/
@@ -393,14 +395,7 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 	 */
 	@Override
 	protected Action selectAction(State state, Set<Action> actions){
-		// Elegir mayor reward
-		// for(Action a : actions) {
-		// 	 if(a.get(ActionTags.SimilarityValue, 0) > 1) {
-		//		return a;
-		//	 }
-		// }
-		
-		
+
 		// ENFOQUE 2: Decrecimiento iterativo de los QValues
 		
 		//Seleccionar la acción con el mayor valor en su tag QLearning.
@@ -409,10 +404,8 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 		double maxQLearning = 0.0;
 		double actionQLearning = 0.0;
 		
-		System.out.println("QL Finales:");
 		for(Action a : actions) {
 			actionQLearning = a.get(ActionTags.QLearning, 0.0);
-			System.out.println(actionQLearning);
 			if(actionQLearning > maxQLearning) {
 				maxQLearning = actionQLearning;
 				maxActionNumber = iteration;
@@ -427,12 +420,16 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 			if(iteration == maxActionNumber) {
 				double newQL = greaterThanZero(a.get(ActionTags.QLearning, 0.0) - 0.05);
 				a.set(ActionTags.QLearning, newQL);
-				updateListsAfter(actions);
+
+				System.out.println("Action to be executed: " + a.get(Tags.OriginWidget).get(Tags.Desc) + "\t\t New QLearning = " + a.get(ActionTags.QLearning, 0.0));
+				
+				updateListsAfter(a);
 				
 				System.out.println(" ··· END ···");
 				System.out.println(" ··· actionNamesGlobalList: " + actionNamesGlobalList);
 				System.out.println(" ··· actionGroupsGlobalList: " + actionGroupsGlobalList);
 				System.out.println(" ··· qLearningsGlobalList: " + qLearningsGlobalList);
+				System.out.println(" ··· zIndexesGlobalList: " + zIndexesGlobalList);
 				
 				return a;
 			}
@@ -462,12 +459,14 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 		//numWidgetsBefore = numWidgetsNow;
 		
 		if (maxAction != null) {
-			updateListsAfterE3(maxAction);
+			updateListsAfter(maxAction);
 			
-			System.out.println("... lastActionExecutedName: " + lastActionExecutedName);
-			System.out.println("... lastActionExecutedQL: " + maxQLearning);
-			System.out.println("... actionNamesGlobalList: " + actionNamesGlobalList);
-			System.out.println("... qLearningsGlobalList: " + qLearningsGlobalList);
+			System.out.println("... actionToBeExecutedName: " + lastActionExecutedName);
+			System.out.println("... actionToBeExecutedQL: " + maxQLearning);
+			System.out.println("··· actionNamesGlobalList: " + actionNamesGlobalList);
+			System.out.println(" ··· actionGroupsGlobalList: " + actionGroupsGlobalList);
+			System.out.println(" ··· qLearningsGlobalList: " + qLearningsGlobalList);
+			System.out.println(" ··· zIndexesGlobalList: " + zIndexesGlobalList);
 			
 			return maxAction;
 		}
@@ -716,7 +715,7 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 				break;
 		}
 	}
-	
+	/*
 	private void updateListsBefore(Action a) {
 		String actionName = a.get(Tags.OriginWidget).get(Tags.Desc);
 		if(actionNamesGlobalList.contains(actionName)) {
@@ -751,32 +750,43 @@ public class Protocol_desktop_generic extends DesktopProtocol {
 				}
 			}
 		}
-	}
+	}*/
 	
-	private void updateListsBeforeE34(Action a) {
+	private void updateListsBefore(Action a) {
 		String actionName = a.get(Tags.OriginWidget).get(Tags.Desc);
 		if(actionNamesGlobalList.contains(actionName)) {
 			int actionIndex = actionNamesGlobalList.indexOf(actionName);
 			a.set(ActionTags.QLearning, qLearningsGlobalList.get(actionIndex));
+			int zIndexInt = (int) Math.round(zIndexesGlobalList.get(actionIndex));
+			a.set(ActionTags.ZIndex, zIndexInt);
+			setActionGroup(actionGroupsGlobalList.get(actionIndex), a);
 		}
 	}
 	
-	private void updateListsAfterE3(Action maxAction) {
+	private void updateListsAfter(Action maxAction) {
 		String maxActionName = maxAction.get(Tags.OriginWidget).get(Tags.Desc);
+		String maxActionGroup = maxAction.get(ActionTags.ActionGroup, ActionGroupType.UIAWidget).toString();
 		double maxActionQL = maxAction.get(ActionTags.QLearning);
+		double maxActionZIndex = maxAction.get(Tags.OriginWidget).get(Tags.ZIndex);
 		lastActionExecutedName = maxActionName;
 				
 		if(actionNamesGlobalList.isEmpty()) {
 			actionNamesGlobalList.add(maxActionName);
+			actionGroupsGlobalList.add(maxActionGroup);
 			qLearningsGlobalList.add(maxActionQL);
+			zIndexesGlobalList.add(maxActionZIndex);
 		} else {
 			if(actionNamesGlobalList.contains(maxActionName)) {
-				double maxActionZIndex = maxAction.get(Tags.OriginWidget).get(Tags.ZIndex);
-				int maxActionIndex = actionNamesGlobalList.indexOf(maxActionName);
-				qLearningsGlobalList.set(maxActionIndex, maxActionQL - (0.01 * maxActionZIndex));
+				int index = actionNamesGlobalList.indexOf(maxActionName);
+				actionGroupsGlobalList.set(index, maxActionGroup);
+				if(enfoque3o4) maxActionQL -= 0.01 * maxActionZIndex;
+				qLearningsGlobalList.set(index, maxActionQL);
+				zIndexesGlobalList.set(index, maxActionZIndex);
 			} else {
 				actionNamesGlobalList.add(maxActionName);
+				actionGroupsGlobalList.add(maxActionGroup);
 				qLearningsGlobalList.add(maxActionQL);
+				zIndexesGlobalList.add(maxActionZIndex);
 			}
 		}
 	}
